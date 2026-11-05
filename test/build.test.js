@@ -17,9 +17,19 @@ test("build writes the static site Vercel publishes", async () => {
   assert.match(html, /MoM /);
   assert.match(html, /Below 10% floor/);
   assert.match(html, /at or under 90% of list/);
+  assert.match(html, /id="compare"/);
+  assert.match(html, /from "\.\/compare\.js"/);
+  assert.match(html, /SCOTTISH/);
+  assert.match(html, /GROUP COMPANIES/);
+  assert.match(html, /favicon\.svg/);
+  assert.equal(html.includes("#1f6feb"), false);
+  const favicon = await readFile(new URL("../public/favicon.svg", import.meta.url), "utf8");
+  assert.match(favicon, /#1B2A4A/);
 
   const commission = await readFile(new URL("../public/commission.js", import.meta.url), "utf8");
   assert.match(commission, /export function computeCommission/);
+  const compare = await readFile(new URL("../public/compare.js", import.meta.url), "utf8");
+  assert.match(compare, /export function comparePeriods/);
 
   const data = JSON.parse(
     await readFile(new URL("../public/data.json", import.meta.url), "utf8"),
