@@ -71,6 +71,19 @@
 
     .app { display: none; max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
     .app.visible { display: block; }
+    .demo-banner {
+      background: var(--navy); color: #fff; font-weight: 700; letter-spacing: .04em;
+      text-align: center; padding: 12px 16px; margin: -28px -20px 18px;
+    }
+    .back-link {
+      border: 0; background: transparent; color: var(--navy); font: inherit; font-weight: 700;
+      cursor: pointer; padding: 0 0 12px; text-decoration: underline;
+    }
+    .team-table tr { cursor: pointer; }
+    .rep-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+    .rep-picker label {
+      border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: .82rem; font-weight: 600;
+    }
     header.top {
       display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
       justify-content: space-between; margin-bottom: 22px;
@@ -213,6 +226,49 @@
   </div>
 
   <main class="app" id="app">
+    <div id="demoBanner" class="demo-banner" hidden>Demo data. Dollar amounts and commission rates are simulated. Job and client names are from 2026.</div>
+    <button type="button" id="backToAdmin" class="back-link" hidden>All reps</button>
+    <section id="adminHome" hidden>
+      <header class="top">
+        <div class="brand-row">
+          <svg class="brand-logo" viewBox="0 0 268 56" role="img" aria-label="Scottish Group Companies">
+            <rect width="56" height="56" rx="4" fill="#ffffff"/>
+            <g fill="#1B2A4A">
+              <rect x="4" y="4" width="22" height="22"/>
+              <rect x="30" y="4" width="22" height="22"/>
+              <rect x="4" y="30" width="22" height="22"/>
+              <rect x="30" y="30" width="22" height="22"/>
+            </g>
+            <text x="72" y="28" fill="currentColor" font-family="Instrument Serif, Georgia, serif" font-size="26">SCOTTISH</text>
+            <text x="72" y="46" fill="currentColor" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="9" letter-spacing="2.6">GROUP COMPANIES</text>
+          </svg>
+          <div>
+            <h1 class="page-title">Sales team</h1>
+            <p class="sub">Admin view · first names only · demo dollars</p>
+          </div>
+        </div>
+      </header>
+      <section class="kpi-grid" id="companyKpis"></section>
+      <section class="card" style="margin-bottom:14px">
+        <h2>Team</h2>
+        <p class="caption">Click a rep for their dashboard. Rates are simulated.</p>
+        <div style="overflow-x:auto">
+          <table class="jobs team-table">
+            <thead>
+              <tr><th>Rep</th><th>Demo rate</th><th>Sales</th><th>Commission</th><th>Jobs</th><th>Avg job</th><th>Below floor</th></tr>
+            </thead>
+            <tbody id="teamBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card" style="margin-bottom:14px">
+        <h2>Compare reps</h2>
+        <p class="caption">Pick two or more reps. Figures use the same simulated dollars.</p>
+        <div class="rep-picker" id="repPicker"></div>
+        <div id="repCompareOut"></div>
+        <div class="chart-wrap" id="repCompareWrap" hidden><canvas id="repCompareChart"></canvas></div>
+      </section>
+    </section>
     <header class="top">
       <div class="brand-row">
         <svg class="brand-logo" viewBox="0 0 268 56" role="img" aria-label="Scottish Group Companies">
@@ -227,8 +283,8 @@
           <text x="72" y="46" fill="currentColor" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="9" letter-spacing="2.6">GROUP COMPANIES</text>
         </svg>
         <div>
-          <h1 class="page-title">Nick · Commission Dashboard</h1>
-          <p class="sub">Scottish Window Tinting · 7% commission · as of <span id="asOf"></span></p>
+          <h1 class="page-title" id="pageTitle">Nick · Commission Dashboard</h1>
+          <p class="sub" id="pageSub">Scottish Window Tinting · 7% commission · as of <span id="asOf"></span></p>
         </div>
       </div>
       <div class="filters">
@@ -252,12 +308,12 @@
     <section class="grid-2">
       <div class="card">
         <h2>Monthly sales &amp; commission</h2>
-        <p class="caption">Bars = sales · Line = commission · MoM change on hover</p>
+        <p class="caption">Sales · month-over-month change on hover</p>
         <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
       </div>
       <div class="card">
         <h2>YTD cumulative</h2>
-        <p class="caption">Running total of sales and commission</p>
+        <p class="caption">Running total of sales</p>
         <div class="chart-wrap"><canvas id="cumChart"></canvas></div>
       </div>
     </section>
@@ -286,6 +342,7 @@
       <div class="compare-toolbar">
         <button type="button" id="presetMonth">This month vs last month</button>
         <button type="button" id="presetQuarter">This quarter vs last quarter</button>
+        <button type="button" id="presetYear" hidden>This year vs last year</button>
       </div>
       <div class="compare-ranges">
         <div class="period a">
@@ -368,6 +425,7 @@
 
   <script type="module">
     import { computeCommission } from "./commission.js";
+    import { buildDemo, monthLabel, repDashboard } from "./admin-data.js";
     import {
       comparePeriods,
       listQuarters,
@@ -378,7 +436,8 @@
       typeRows,
     } from "./compare.js";
 
-    const CODE = "1234";
+    const REP_CODE = "1234";
+    const ADMIN_CODE = "0000";
     const money = (n) => n == null || Number.isNaN(n) ? "—" :
       "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const money2 = (n) => n == null || Number.isNaN(n) ? "—" :
@@ -401,55 +460,221 @@
     document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
     function tryUnlock() {
       const code = inputs.map((i) => i.value).join("");
-      if (code !== CODE) {
+      if (code === ADMIN_CODE) {
+        unlockShell();
+        bootAdmin();
+        return;
+      }
+      if (code !== REP_CODE) {
         gateError.textContent = "Incorrect code. Try again.";
         inputs.forEach((i) => (i.value = ""));
         inputs[0].focus();
         return;
       }
+      unlockShell();
+      bootNick();
+    }
+    function unlockShell() {
       document.getElementById("gate").classList.add("hidden");
       document.body.classList.remove("locked");
       document.getElementById("app").classList.add("visible");
-      boot();
     }
 
     let DATA = null;
+    let COMPARE_JOBS = null;
     let charts = {};
+    let DEMO = null;
+    let filtersBound = false;
 
-    async function boot() {
+    async function bootNick() {
       const res = await fetch("./data.json");
-      DATA = await res.json();
-      // sanity: engine available
-      void computeCommission;
-      document.getElementById("asOf").textContent = DATA.asOf;
-      document.getElementById("metaNote").textContent = DATA.meta.note;
+      COMPARE_JOBS = null;
+      document.getElementById("demoBanner").hidden = true;
+      document.getElementById("backToAdmin").hidden = true;
+      document.getElementById("adminHome").hidden = true;
+      document.getElementById("presetYear").hidden = true;
+      showRep(await res.json());
+    }
+
+    async function bootAdmin() {
+      const res = await fetch("./admin-jobs.json");
+      DEMO = buildDemo(await res.json());
+      document.getElementById("demoBanner").hidden = false;
+      document.getElementById("presetYear").hidden = false;
+      showCompany();
+    }
+
+    function showCompany() {
+      const jobs = DEMO.jobs2026;
+      const latest = [...new Set(jobs.map((job) => job.monthKey))].sort().at(-1);
+      const thisMonthJobs = jobs.filter((job) => job.monthKey === latest);
+      COMPARE_JOBS = [...DEMO.jobs2026, ...DEMO.jobs2025];
+      document.getElementById("adminHome").hidden = false;
+      document.getElementById("backToAdmin").hidden = true;
+      paintTeam();
+      showRep({
+        asOf: "Demo snapshot",
+        rep: { displayName: "Team", rate: 0, rateLabel: "mixed demo rates" },
+        kpis: {
+          ytdSales: DEMO.sales,
+          ytdCommission: DEMO.commission,
+          thisMonthSales: thisMonthJobs.reduce((sum, job) => sum + job.charged, 0),
+          thisMonthCommission: thisMonthJobs.reduce((sum, job) => sum + (job.commission || 0), 0),
+          thisMonthLabel: latest ? monthLabel(latest) : "",
+          jobCount: jobs.length,
+          avgJobSize: jobs.length ? DEMO.sales / jobs.length : 0,
+          expectedPayrollCommission: thisMonthJobs.reduce((sum, job) => sum + (job.commission || 0), 0),
+          listVerifiedCount: jobs.filter((job) => job.listVerified).length,
+          listNotVerifiedCount: jobs.filter((job) => !job.listVerified).length,
+          belowFloorCount: jobs.filter((job) => job.status === "below_floor").length,
+        },
+        months: [...new Set(jobs.map((job) => job.monthKey))].sort().map((key) => ({ key, label: monthLabel(key) })),
+        jobs,
+        meta: { note: "Demo data. Dollar amounts and commission rates are simulated. Job and client names are from 2026." },
+      }, { keepAdmin: true });
+    }
+
+    function showRep(data, options = {}) {
+      DATA = data;
+      document.getElementById("pageTitle").textContent = `${data.rep.displayName} · Commission Dashboard`;
+      document.getElementById("pageSub").innerHTML = `Scottish Window Tinting · ${data.rep.rateLabel} · as of <span id="asOf">${data.asOf}</span>`;
+      document.getElementById("metaNote").textContent = data.meta.note;
+      if (!options.keepAdmin) document.getElementById("adminHome").hidden = true;
       fillFilters();
-      ["monthFilter", "typeFilter", "stateFilter"].forEach((id) =>
-        document.getElementById(id).addEventListener("change", render)
-      );
       initCompare();
       render();
+    }
+
+    function paintTeam() {
+      const moneyCell = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById("companyKpis").innerHTML = [
+        { label: "Company sales YTD", value: moneyCell(DEMO.sales), hint: "2026 · simulated" },
+        { label: "Company commission", value: moneyCell(DEMO.commission), hint: "Simulated rates" },
+      ].map((card) => `<div class="kpi accent"><div class="label">${card.label}</div><div class="value money">${card.value}</div><div class="hint">${card.hint}</div></div>`).join("");
+      document.getElementById("teamBody").innerHTML = DEMO.reps.map((rep) => {
+        const below = rep.jobs.filter((job) => job.status === "below_floor").length;
+        const avg = rep.count ? rep.sales / rep.count : 0;
+        return `<tr data-rep="${rep.code}">
+          <td>${rep.name}</td><td>${rep.rateLabel}</td><td class="money">${moneyCell(rep.sales)}</td>
+          <td class="money">${moneyCell(rep.commission)}</td><td>${rep.count}</td>
+          <td class="money">${moneyCell(avg)}</td><td>${below}</td>
+        </tr>`;
+      }).join("");
+      document.getElementById("teamBody").querySelectorAll("tr").forEach((row) => {
+        row.addEventListener("click", () => {
+          const rep = DEMO.reps.find((item) => item.code === row.dataset.rep);
+          COMPARE_JOBS = [...rep.jobs, ...DEMO.jobs2025.filter((job) => job.designer === rep.code)];
+          document.getElementById("demoBanner").hidden = false;
+          document.getElementById("backToAdmin").hidden = false;
+          showRep(repDashboard(rep));
+        });
+      });
+      document.getElementById("repPicker").innerHTML = DEMO.reps.map((rep) =>
+        `<label><input type="checkbox" value="${rep.code}" /> ${rep.name}</label>`
+      ).join("");
+      document.getElementById("repPicker").querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", renderRepCompare);
+      });
+    }
+
+    document.getElementById("backToAdmin").addEventListener("click", () => {
+      document.getElementById("backToAdmin").hidden = true;
+      showCompany();
+    });
+
+    function renderRepCompare() {
+      const selected = [...document.querySelectorAll("#repPicker input:checked")].map((input) =>
+        DEMO.reps.find((rep) => rep.code === input.value)
+      );
+      const out = document.getElementById("repCompareOut");
+      const wrap = document.getElementById("repCompareWrap");
+      if (selected.length < 2) {
+        out.innerHTML = "<p class='caption'>Select at least two reps.</p>";
+        wrap.hidden = true;
+        destroy("reps");
+        return;
+      }
+      const metrics = [
+        ["Sales", (rep) => rep.sales],
+        ["Commission", (rep) => rep.commission],
+        ["Jobs", (rep) => rep.count],
+        ["Avg job", (rep) => (rep.count ? rep.sales / rep.count : 0)],
+        ["Below floor", (rep) => rep.jobs.filter((job) => job.status === "below_floor").length],
+      ];
+      const header = selected.map((rep) => `<th>${rep.name}</th>`).join("");
+      const body = metrics.map(([label, pick]) =>
+        `<tr><td>${label}</td>${selected.map((rep) => `<td class="money">${typeof pick(rep) === "number" && label !== "Jobs" && label !== "Below floor" ? "$" + pick(rep).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : pick(rep)}</td>`).join("")}</tr>`
+      ).join("");
+      const types = ["Residential", "Commercial"];
+      const typeRowsHtml = types.map((type) =>
+        `<tr><td>${type} sales</td>${selected.map((rep) => {
+          const sales = rep.jobs.filter((job) => job.jobType === type).reduce((sum, job) => sum + job.charged, 0);
+          return `<td class="money">$${sales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+        }).join("")}</tr>`
+      ).join("");
+      const stateNames = [...new Set(selected.flatMap((rep) => rep.jobs.map((job) => job.state)))];
+      const ranked = stateNames.map((state) => ({
+        state,
+        total: selected.reduce((sum, rep) => sum + rep.jobs.filter((job) => job.state === state).reduce((inner, job) => inner + job.charged, 0), 0),
+      })).sort((a, b) => b.total - a.total).slice(0, 5);
+      const stateRows = ranked.map((row) =>
+        `<tr><td>${row.state}</td>${selected.map((rep) => {
+          const sales = rep.jobs.filter((job) => job.state === row.state).reduce((sum, job) => sum + job.charged, 0);
+          return `<td class="money">$${sales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+        }).join("")}</tr>`
+      ).join("");
+      out.innerHTML = `<div style="overflow-x:auto"><table class="compare-table"><thead><tr><th>Metric</th>${header}</tr></thead><tbody>${body}${typeRowsHtml}</tbody></table>
+        <h3 style="margin-top:16px">Top states</h3>
+        <table class="compare-table"><thead><tr><th>State</th>${header}</tr></thead><tbody>${stateRows}</tbody></table></div>`;
+      wrap.hidden = false;
+      destroy("reps");
+      const colors = ["#1B2A4A", "#4E628A", "#8B98B3", "#2C3D64", "#C5CEDD", "#121c33"];
+      charts.reps = new Chart(document.getElementById("repCompareChart"), {
+        type: "bar",
+        data: {
+          labels: selected.map((rep) => rep.name),
+          datasets: [
+            { label: "Sales", data: selected.map((rep) => rep.sales), backgroundColor: colors[0], borderRadius: 6 },
+            { label: "Commission", data: selected.map((rep) => rep.commission), backgroundColor: colors[1], borderRadius: 6 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { ticks: { callback: (value) => "$" + Math.round(value / 1000) + "k" }, grid: { color: "#eef2f7" } } },
+        },
+      });
     }
 
     function fillFilters() {
       const months = DATA.months;
       const mf = document.getElementById("monthFilter");
+      mf.innerHTML = '<option value="all">All months</option>';
       months.forEach((m) => {
         const o = document.createElement("option");
         o.value = m.key; o.textContent = m.label; mf.appendChild(o);
       });
       const types = [...new Set(DATA.jobs.map((j) => j.jobType))].sort();
       const tf = document.getElementById("typeFilter");
+      tf.innerHTML = '<option value="all">All types</option>';
       types.forEach((t) => {
         const o = document.createElement("option");
         o.value = t; o.textContent = t; tf.appendChild(o);
       });
       const states = [...new Set(DATA.jobs.map((j) => j.state))].sort();
       const sf = document.getElementById("stateFilter");
+      sf.innerHTML = '<option value="all">All states</option>';
       states.forEach((s) => {
         const o = document.createElement("option");
         o.value = s; o.textContent = s; sf.appendChild(o);
       });
+      if (!filtersBound) {
+        ["monthFilter", "typeFilter", "stateFilter"].forEach((id) =>
+          document.getElementById(id).addEventListener("change", render)
+        );
+        filtersBound = true;
+      }
     }
 
     function filteredJobs() {
@@ -518,7 +743,7 @@
       const floorCount = jobs.filter((j) => j.status === "below_floor").length;
       const cards = [
         { label: allMode ? "YTD sales" : "Filtered sales", value: money(agg.sales), hint: "Job Total excl. 4% fee", accent: true },
-        { label: allMode ? "YTD commission" : "Filtered commission", value: money2(agg.commission), hint: "Nick · 7%" },
+        { label: allMode ? "YTD commission" : "Filtered commission", value: money2(agg.commission), hint: `${DATA.rep.displayName} · ${DATA.rep.rateLabel}` },
         { label: "This month", value: money(k.thisMonthSales), hint: k.thisMonthLabel + " · " + money2(k.thisMonthCommission) + " comm." },
         { label: "Jobs", value: String(agg.count), hint: allMode ? (k.listNotVerifiedCount + " list not verified") : "in current filter" },
         { label: "Below 10% floor", value: String(floorCount), hint: "Charged ≤ 90% of list", floor: true },
@@ -547,17 +772,14 @@
           labels,
           datasets: [
             { type: "bar", label: "Sales", data: months.map((m) => m.sales),
-              backgroundColor: "rgba(27,42,74,.9)", borderRadius: 6, yAxisID: "y" },
-            { type: "line", label: "Commission", data: months.map((m) => m.commission),
-              borderColor: "#4E628A", backgroundColor: "rgba(78,98,138,.15)",
-              tension: .35, fill: false, yAxisID: "y1", pointRadius: 3 },
+              backgroundColor: "rgba(27,42,74,.9)", borderRadius: 6 },
           ],
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           interaction: { mode: "index", intersect: false },
           plugins: {
-            legend: { position: "bottom" },
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 footer(items) {
@@ -575,7 +797,6 @@
           },
           scales: {
             y: { ticks: { callback: (v) => "$" + (v/1000) + "k" }, grid: { color: "#eef2f7" } },
-            y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { callback: (v) => "$" + v } },
           },
         },
       });
@@ -590,13 +811,11 @@
           datasets: [
             { label: "Cumulative sales", data: months.map((m) => m.cumSales),
               borderColor: "#1B2A4A", tension: .3, fill: false },
-            { label: "Cumulative commission", data: months.map((m) => m.cumCommission),
-              borderColor: "#8B98B3", tension: .3, fill: false },
           ],
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } },
+          plugins: { legend: { display: false } },
           scales: { y: { ticks: { callback: (v) => "$" + (v/1000).toFixed(0) + "k" }, grid: { color: "#eef2f7" } } },
         },
       });
@@ -682,7 +901,7 @@
       return left.start === right.start && left.end === right.end;
     }
     function setActivePreset() {
-      const keys = DATA.months.map((month) => month.key);
+      const keys = compareMonthList().map((month) => month.key);
       const preset = presets(keys);
       const ranges = currentRanges();
       document.getElementById("presetMonth").classList.toggle(
@@ -711,58 +930,81 @@
       setActivePreset();
       renderCompare();
     }
+    let compareBound = false;
     function initCompare() {
-      const monthSelects = ["aStart", "aEnd", "bStart", "bEnd"];
-      for (const id of monthSelects) {
+      const months = compareMonthList();
+      for (const id of ["aStart", "aEnd", "bStart", "bEnd"]) {
         const select = document.getElementById(id);
-        DATA.months.forEach((month) => {
+        select.innerHTML = "";
+        months.forEach((month) => {
           const option = document.createElement("option");
           option.value = month.key;
           option.textContent = month.label;
           select.appendChild(option);
         });
-        select.addEventListener("change", () => {
-          syncQuarterSelect(id.startsWith("a") ? "a" : "b");
-          setActivePreset();
-          renderCompare();
-        });
       }
-      for (const quarter of listQuarters(DATA.months.map((month) => month.key))) {
-        for (const id of ["aQuarter", "bQuarter"]) {
+      for (const id of ["aQuarter", "bQuarter"]) {
+        const select = document.getElementById(id);
+        select.innerHTML = '<option value="">Custom range</option>';
+        for (const quarter of listQuarters(months.map((month) => month.key))) {
           const option = document.createElement("option");
           option.value = quarter.id;
           option.textContent = `Q${quarter.quarter} ${quarter.year}`;
           option.dataset.start = quarter.start;
           option.dataset.end = quarter.end;
-          document.getElementById(id).appendChild(option);
+          select.appendChild(option);
         }
       }
-      for (const id of ["aQuarter", "bQuarter"]) {
-        const select = document.getElementById(id);
-        const custom = document.createElement("option");
-        custom.value = "";
-        custom.textContent = "Custom range";
-        select.prepend(custom);
-        select.addEventListener("change", () => {
-          if (!select.value) return;
-          const chosen = select.selectedOptions[0];
-          const side = id.startsWith("a") ? "a" : "b";
-          document.getElementById(side + "Start").value = chosen.dataset.start;
-          document.getElementById(side + "End").value = chosen.dataset.end;
-          setActivePreset();
-          renderCompare();
+      if (!compareBound) {
+        for (const id of ["aStart", "aEnd", "bStart", "bEnd"]) {
+          document.getElementById(id).addEventListener("change", () => {
+            syncQuarterSelect(id.startsWith("a") ? "a" : "b");
+            setActivePreset();
+            renderCompare();
+          });
+        }
+        for (const id of ["aQuarter", "bQuarter"]) {
+          document.getElementById(id).addEventListener("change", () => {
+            const select = document.getElementById(id);
+            if (!select.value) return;
+            const chosen = select.selectedOptions[0];
+            const side = id.startsWith("a") ? "a" : "b";
+            document.getElementById(side + "Start").value = chosen.dataset.start;
+            document.getElementById(side + "End").value = chosen.dataset.end;
+            setActivePreset();
+            renderCompare();
+          });
+        }
+        document.getElementById("presetMonth").addEventListener("click", () => {
+          const preset = presets(compareMonthList().map((month) => month.key));
+          applyRanges(preset.month.a, preset.month.b);
         });
+        document.getElementById("presetQuarter").addEventListener("click", () => {
+          const preset = presets(compareMonthList().map((month) => month.key));
+          if (preset.quarter) applyRanges(preset.quarter.a, preset.quarter.b);
+        });
+        document.getElementById("presetYear").addEventListener("click", () => {
+          applyRanges({ start: "2026-01", end: "2026-11" }, { start: "2025-01", end: "2025-11" });
+        });
+        compareBound = true;
       }
-      const preset = presets(DATA.months.map((month) => month.key));
-      document.getElementById("presetMonth").addEventListener("click", () => applyRanges(preset.month.a, preset.month.b));
+      const preset = presets(months.map((month) => month.key));
       const quarterButton = document.getElementById("presetQuarter");
-      if (!preset.quarter) quarterButton.disabled = true;
-      else quarterButton.addEventListener("click", () => applyRanges(preset.quarter.a, preset.quarter.b));
-      applyRanges(preset.month.a, preset.month.b);
+      quarterButton.disabled = !preset.quarter;
+      if (preset.month) applyRanges(preset.month.a, preset.month.b);
+    }
+    function compareMonthList() {
+      const jobs = COMPARE_JOBS || DATA.jobs;
+      const known = new Map((DATA.months || []).map((month) => [month.key, month.label]));
+      return [...new Set(jobs.map((job) => job.monthKey).filter(Boolean))].sort().map((key) => ({
+        key,
+        label: known.get(key) || monthLabel(key),
+      }));
     }
     function renderCompare() {
       const ranges = currentRanges();
-      const { a, b } = comparePeriods(DATA.jobs, ranges.a, ranges.b);
+      if (!ranges.a.start || !ranges.b.start) return;
+      const { a, b } = comparePeriods(COMPARE_JOBS || DATA.jobs, ranges.a, ranges.b);
       const direction = orientPeriods(a, b);
       const { earlier, later, earlierLabel, laterLabel, label } = direction;
       document.getElementById("compareHeadEarlier").textContent = earlierLabel;

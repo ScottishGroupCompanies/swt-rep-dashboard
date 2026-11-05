@@ -11,7 +11,7 @@ test("build writes the static site Vercel publishes", async () => {
 
   const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
   assert.match(html, /import \{ computeCommission \} from "\.\/commission\.js"/);
-  assert.match(html, /const CODE = "1234"/);
+  assert.match(html, /const REP_CODE = "1234"/);
   assert.match(html, /Nick · Commission Dashboard/);
   assert.match(html, /chart\.umd\.min\.js/);
   assert.match(html, /MoM /);
@@ -23,6 +23,13 @@ test("build writes the static site Vercel publishes", async () => {
   assert.match(html, /GROUP COMPANIES/);
   assert.match(html, /favicon\.svg/);
   assert.equal(html.includes("#1f6feb"), false);
+  assert.equal(html.includes('label: "Cumulative commission"'), false);
+  assert.match(html, /const ADMIN_CODE = "0000"/);
+  assert.match(html, /const REP_CODE = "1234"/);
+  assert.match(html, /Demo data/);
+  const adminJobs = JSON.parse(await readFile(new URL("../public/admin-jobs.json", import.meta.url), "utf8"));
+  assert.ok(adminJobs.length > 50);
+  assert.equal(JSON.stringify(adminJobs).includes("charged"), false);
   const favicon = await readFile(new URL("../public/favicon.svg", import.meta.url), "utf8");
   assert.match(favicon, /#1B2A4A/);
 
