@@ -16,14 +16,19 @@ test("admin roster uses first names only and simulated commission", async () => 
   const raw = JSON.parse(await readFile(new URL("../data/admin-jobs.json", import.meta.url), "utf8"));
   assert.equal(JSON.stringify(raw).includes("charged"), false);
   const demo = buildDemo(raw);
-  const names = demo.reps.map((rep) => rep.name);
-  for (const name of ["Amy", "Blake", "Dana", "Scott", "John", "Katie"]) {
-    assert.ok(names.includes(name), name);
-  }
-  assert.equal(names.includes("Derek"), false);
-  const dana = demo.reps.find((rep) => rep.name === "Dana");
-  assert.equal(dana.code, "DH");
-  assert.equal(dana.jobs.length, 188);
+  assert.deepEqual(
+    demo.reps.map((rep) => [rep.name, rep.code, rep.count]),
+    [
+      ["Blake", "BP", 384],
+      ["Amy", "AH", 267],
+      ["Dana", "DH", 188],
+      ["Katie", "KF", 96],
+      ["Scott", "SG", 29],
+      ["John", "JB", 4],
+    ],
+  );
+  assert.equal(demo.reps.some((rep) => rep.name === "Derek"), false);
+  assert.equal(raw.some((job) => ["MK", "MB", "JC", "TR", "DE", "TJ"].includes(job.designer)), false);
   assert.equal(JSON.stringify(raw).includes("Katie Neuman"), false);
   assert.equal(JSON.stringify(raw).includes("Hojnacki"), false);
   for (const rep of demo.reps) {

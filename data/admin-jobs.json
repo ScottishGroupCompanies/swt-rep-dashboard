@@ -160,16 +160,6 @@
     "jobType": "Unspecified"
   },
   {
-    "client": "CIR Contracting - Frank",
-    "zoho": "F230876",
-    "jobNumber": "",
-    "designer": "JC",
-    "month": "2026-02",
-    "location": "Other",
-    "segment": "Commercial",
-    "jobType": "Unspecified"
-  },
-  {
     "client": "Dr. Shawn Davaie",
     "zoho": "F240225",
     "jobNumber": "",
@@ -196,16 +186,6 @@
     "designer": "AH",
     "month": "2026-02",
     "location": "TX - DFW",
-    "segment": "Commercial",
-    "jobType": "Unspecified"
-  },
-  {
-    "client": "Mid America Contracting",
-    "zoho": "F231202",
-    "jobNumber": "",
-    "designer": "JC",
-    "month": "2026-02",
-    "location": "MO",
     "segment": "Commercial",
     "jobType": "Unspecified"
   },
@@ -1010,36 +990,6 @@
     "jobType": "Frost/ Decorative"
   },
   {
-    "client": "Horizon Glass (SVVSD HS)",
-    "zoho": "WT-02517",
-    "jobNumber": "F250065",
-    "designer": "MK",
-    "month": "2026-01",
-    "location": "CO - North",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
-  },
-  {
-    "client": "Element 13 (HRHS Auto)",
-    "zoho": "WT-02606",
-    "jobNumber": "F250066",
-    "designer": "MK",
-    "month": "2026-01",
-    "location": "CO - South",
-    "segment": "Commercial",
-    "jobType": "Security/ Safety"
-  },
-  {
-    "client": "Element 13 (DC Cosmetology)",
-    "zoho": "WT-02605",
-    "jobNumber": "F250067",
-    "designer": "MK",
-    "month": "2026-01",
-    "location": "CO - South",
-    "segment": "Commercial",
-    "jobType": "Security/ Safety"
-  },
-  {
     "client": "Element 13 (AMHR - Cloaking) (Order #3)",
     "zoho": "WT-02607",
     "jobNumber": "F250068",
@@ -1610,16 +1560,6 @@
     "jobType": "Glass Replacement"
   },
   {
-    "client": "Lakeview Construction (Kay's Jewelers)",
-    "zoho": "WT-02675",
-    "jobNumber": "F250126",
-    "designer": "MB",
-    "month": "2026-02",
-    "location": "SC",
-    "segment": "Cancelled",
-    "jobType": "Security/ Safety"
-  },
-  {
     "client": "Cottonwood Customs",
     "zoho": "WT-02670",
     "jobNumber": "F250127",
@@ -1678,16 +1618,6 @@
     "location": "CO - West",
     "segment": "Residential",
     "jobType": "Solar Control"
-  },
-  {
-    "client": "Element13 (DCHS Vestibules)",
-    "zoho": "WT-02677",
-    "jobNumber": "F250133",
-    "designer": "MK",
-    "month": "2026-02",
-    "location": "CO - South",
-    "segment": "Commercial",
-    "jobType": "Security/ Safety"
   },
   {
     "client": "Lori Marinelli",
@@ -2006,16 +1936,6 @@
     "designer": "SG",
     "month": "2026-03",
     "location": "KS",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
-  },
-  {
-    "client": "G.A. Johnson & Son (O'Reilly's)",
-    "zoho": "WT-02714",
-    "jobNumber": "F250168",
-    "designer": "MB",
-    "month": "2026-03",
-    "location": "CO - Denver",
     "segment": "Commercial",
     "jobType": "Frost/ Decorative"
   },
@@ -2808,16 +2728,6 @@
     "location": "CO - Denver",
     "segment": "Commercial",
     "jobType": "Solar Control"
-  },
-  {
-    "client": "MarkerHIll Construction (121 Idlewil)",
-    "zoho": "WT-02790",
-    "jobNumber": "F250248",
-    "designer": "MK",
-    "month": "2026-03",
-    "location": "CO - West",
-    "segment": "Commercial",
-    "jobType": "Security/ Safety"
   },
   {
     "client": "True View Windows & Glass (PO#038770)",
@@ -4000,16 +3910,6 @@
     "jobType": "Solar Control"
   },
   {
-    "client": "Colorado Early Colleges - Inverness (glass)",
-    "zoho": "WT-02932",
-    "jobNumber": "F250371",
-    "designer": "MK",
-    "month": "2026-04",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Glass Replacement"
-  },
-  {
     "client": "Opus - PMI",
     "zoho": "WT-02935",
     "jobNumber": "F250372",
@@ -4228,26 +4128,6 @@
     "location": "CO - North",
     "segment": "Commercial",
     "jobType": "Solar Control"
-  },
-  {
-    "client": "Palace Construction (REI)",
-    "zoho": "WT-02954",
-    "jobNumber": "F250394",
-    "designer": "MB",
-    "month": "2026-05",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
-  },
-  {
-    "client": "Palace Construction (REI)",
-    "zoho": "WT-02954 CO01",
-    "jobNumber": "",
-    "designer": "MB",
-    "month": "2026-10",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
   },
   {
     "client": "Mark Steiman",
@@ -4870,16 +4750,6 @@
     "jobType": "Frost/ Decorative"
   },
   {
-    "client": "Canyon Fly Shop",
-    "zoho": "WT-03004",
-    "jobNumber": "F250461",
-    "designer": "MK",
-    "month": "2026-05",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
-  },
-  {
     "client": "Venture X (Carma logo order#5)",
     "zoho": "WT-03029",
     "jobNumber": "F250462",
@@ -5238,16 +5108,6 @@
     "location": "CO - Denver",
     "segment": "Residential",
     "jobType": "Solar Control"
-  },
-  {
-    "client": "Anderson Construction (Trails Recreation Center)",
-    "zoho": "WT-03045",
-    "jobNumber": "F250499",
-    "designer": "MB",
-    "month": "2026-06",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
   },
   {
     "client": "Mark Vaughn and Associates",
@@ -6630,16 +6490,6 @@
     "jobType": "Solar Control"
   },
   {
-    "client": "Anderson Construction (CU Denver)",
-    "zoho": "WT-03233",
-    "jobNumber": "F250640",
-    "designer": "MB",
-    "month": "2026-07",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Frost/ Decorative"
-  },
-  {
     "client": "Ray Potter",
     "zoho": "WT-03230",
     "jobNumber": "F250641",
@@ -7514,16 +7364,6 @@
     "zoho": "WT-03324",
     "jobNumber": "F250730",
     "designer": "AH",
-    "month": "2026-08",
-    "location": "TX - DFW",
-    "segment": "Residential",
-    "jobType": "Solar Control"
-  },
-  {
-    "client": "Michael Householder",
-    "zoho": "WT-03333",
-    "jobNumber": "F250731",
-    "designer": "TR",
     "month": "2026-08",
     "location": "TX - DFW",
     "segment": "Residential",
@@ -8558,16 +8398,6 @@
     "location": "CO - West",
     "segment": "Commercial",
     "jobType": "Frost/ Decorative"
-  },
-  {
-    "client": "G.A Johnson & Son (O'Reilly Auto Parts)",
-    "zoho": "WT-03482",
-    "jobNumber": "F250837",
-    "designer": "MB",
-    "month": "2026-09",
-    "location": "CO - Denver",
-    "segment": "Commercial",
-    "jobType": "Solar Control"
   },
   {
     "client": "Drake Tappe Construction",
