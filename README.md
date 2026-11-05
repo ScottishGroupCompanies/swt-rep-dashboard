@@ -2,7 +2,7 @@
 
 Presentation demo for Scottish Window Tinting, under the Scottish Group Companies mark. A 4-digit gate opens a one-page commission report for sales rep **Nick** at **7%**.
 
-The access code is `1234`. The check runs in the browser only and is not authentication.
+The rep access code is `1234` (Nick). The admin code is `0000` (sales team, simulated dollars). Both checks run in the browser only and are not authentication.
 
 ## What the page shows
 
