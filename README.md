@@ -6,7 +6,7 @@ The access code is `1234`. The check runs in the browser only and is not authent
 
 ## What the page shows
 
-- KPIs: year-to-date sales, year-to-date commission, this month, jobs, average job, expected payroll
+- KPIs: year-to-date sales, year-to-date commission, this month, jobs, below-10% floor count, average job, expected payroll
 - Monthly sales (bars) and commission (line), with month-over-month sales change in the tooltip
 - Year-to-date cumulative sales and commission
 - Sales by state, residential vs commercial, and film mix
@@ -18,10 +18,13 @@ Prices exclude the 4% processing fee. Commission is pre-fee:
 | Case | Commission |
 | --- | --- |
 | Charged at or above list | rate × charged |
-| Undersold | rate × (list − 0.5 × (list − charged)) |
+| Undersold by less than 10% | rate × list − 0.5 × (list − charged) |
+| Charged at or under 90% of list | $0 |
 | No list price | rate × charged, marked list not verified |
 
-Example: list $500, sold $400, rate 7% → base $450 → commission **$31.50**.
+Commission is clamped at $0. Jobs at or under 90% of list are counted on the **Below 10% floor** card. This demo has no manager-approval overrides.
+
+Example: list $1,000 at 5% → sold $1,100 is **$55**, sold $950 is **$25**, sold $900 is **$0**.
 
 ## Project layout
 
@@ -64,7 +67,14 @@ Replace `data/nick_dashboard.json` with a new snapshot in the same shape:
 - `kpis`, `months`, `jobs`, and `meta`
 - Optional rollups: `byState`, `byJobType`, `byFilmType`
 
-Each job needs `charged`, `listPrice` (`null` when the list was not verified), and the commission fields produced by `computeCommission` in `src/commission.js`. The unit tests recompute every job and fail if the snapshot drifts from that rule.
+Each job needs `charged` and `listPrice` (`null` when the list was not verified). Recompute commission, the monthly rollups, and the KPIs from those prices:
+
+```bash
+node scripts/recompute.mjs
+npm test
+```
+
+`src/commission.js` is the rule. The unit tests recompute every job and fail if the snapshot drifts from it.
 
 The sales-rep identity in this repository stays **Nick**. Customer names on the jobs are part of the snapshot.
 

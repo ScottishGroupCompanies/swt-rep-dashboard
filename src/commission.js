@@ -1,11 +1,21 @@
 /**
- * SWT commission engine (owner-confirmed 2026-11-05).
- * Prices exclude 4% fees.
+ * SWT commission engine (owner policy).
+ * Prices exclude the 4% fee. Commission is never negative.
  *
- * charged >= list  → commission = rate × charged
- * undersold        → base = list − 0.5 × (list − charged); commission = rate × base
- * no list          → base = charged; listVerified = false ("list not verified")
+ * charged >= list              → rate × charged
+ * undersold by less than 10%   → rate × list − 0.5 × (list − charged)
+ * charged <= 90% of list       → $0 (no manager approval in this demo)
+ * no list                      → rate × charged, list not verified
+ *
+ * $1,000 list at 5%: sold $1,100 → $55; sold $950 → $25; sold $900 → $0.
  */
+const cents = (n) => Math.round(Number(n) * 100);
+const dollars = (c) => c / 100;
+
+function clampCents(rawCents) {
+  return Math.max(0, Math.round(rawCents));
+}
+
 export function computeCommission(rate, charged, listPrice) {
   if (charged === null || charged === undefined || Number.isNaN(Number(charged))) {
     return {
@@ -20,18 +30,19 @@ export function computeCommission(rate, charged, listPrice) {
       reason: "invalid charged",
     };
   }
-  const ch = Number(charged);
+
+  const chargedCents = cents(charged);
+  const ch = dollars(chargedCents);
   const listVerified =
     listPrice !== null && listPrice !== undefined && !Number.isNaN(Number(listPrice));
 
   if (!listVerified) {
-    const base = ch;
     return {
       listPrice: null,
-      charged: Math.round(ch * 100) / 100,
+      charged: ch,
       difference: null,
-      commissionBase: Math.round(base * 100) / 100,
-      commission: Math.round(rate * base * 100) / 100,
+      commissionBase: ch,
+      commission: dollars(clampCents(rate * chargedCents)),
       rate,
       status: "list_not_verified",
       listVerified: false,
@@ -39,27 +50,44 @@ export function computeCommission(rate, charged, listPrice) {
     };
   }
 
-  const list = Math.round(Number(listPrice) * 100) / 100;
-  const difference = Math.round((ch - list) * 100) / 100;
-  let base;
-  let status;
-  if (ch >= list - 1e-9) {
-    base = ch;
-    status = Math.abs(difference) < 0.01 ? "ok" : "oversold";
-  } else {
-    const shortfall = list - ch;
-    base = Math.round((list - 0.5 * shortfall) * 100) / 100;
-    status = "undersold";
-  }
-  return {
+  const listCents = cents(listPrice);
+  const list = dollars(listCents);
+  const difference = dollars(chargedCents - listCents);
+  const shared = {
     listPrice: list,
-    charged: Math.round(ch * 100) / 100,
+    charged: ch,
     difference,
-    commissionBase: Math.round(base * 100) / 100,
-    commission: Math.round(rate * base * 100) / 100,
     rate,
-    status,
     listVerified: true,
+  };
+
+  if (chargedCents >= listCents) {
+    return {
+      ...shared,
+      commissionBase: ch,
+      commission: dollars(clampCents(rate * chargedCents)),
+      status: Math.abs(difference) < 0.01 ? "ok" : "oversold",
+      reason: null,
+    };
+  }
+
+  // charged <= 90% of list. Integer compare avoids binary float on the boundary.
+  if (chargedCents * 10 <= listCents * 9) {
+    return {
+      ...shared,
+      commissionBase: 0,
+      commission: 0,
+      status: "below_floor",
+      reason: "charged at or below 90% of list",
+    };
+  }
+
+  const shortfallCents = listCents - chargedCents;
+  return {
+    ...shared,
+    commissionBase: null,
+    commission: dollars(clampCents(rate * listCents - 0.5 * shortfallCents)),
+    status: "undersold",
     reason: null,
   };
 }

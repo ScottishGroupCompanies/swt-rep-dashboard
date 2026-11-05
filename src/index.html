@@ -92,9 +92,9 @@
       font: inherit; background: #fff; min-width: 140px;
     }
     .kpi-grid {
-      display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 18px 0 20px;
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin: 18px 0 20px;
     }
-    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
     .kpi {
       background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -106,6 +106,8 @@
     .kpi.accent { background: linear-gradient(160deg, #0b1f33, #16375a); color: #fff; border: 0; }
     .kpi.accent .label, .kpi.accent .hint { color: rgba(255,255,255,.7); }
     .kpi.accent .value { color: #fff; }
+    .kpi.floor { border-color: #f3d3a1; }
+    .kpi.floor .value { color: var(--warn); }
 
     .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -132,6 +134,7 @@
     .pill.warn { background: #fff7ed; color: var(--warn); }
     .pill.ok { background: #ecfdf5; color: var(--ok); }
     .pill.muted { background: #f1f5f9; color: var(--muted); }
+    .pill.danger { background: #fef2f2; color: var(--danger); }
     footer.site {
       margin-top: 28px; color: var(--muted); font-size: .78rem; line-height: 1.5;
       border-top: 1px solid var(--line); padding-top: 16px;
@@ -234,7 +237,7 @@
     </section>
 
     <footer class="site">
-      <div><strong>Commission rule</strong> (pre-fee): at/over list → rate × charged; undersold → rate × (list − 50% of shortfall); no list → rate × charged (list not verified).</div>
+      <div><strong>Commission rule</strong> (pre-fee): at/over list → rate × charged; undersold by less than 10% → rate × list − 0.5 × shortfall; at or under 90% of list → $0; no list → rate × charged (list not verified).</div>
       <div id="metaNote" style="margin-top:6px"></div>
     </footer>
   </main>
@@ -378,16 +381,18 @@
         && document.getElementById("typeFilter").value === "all"
         && document.getElementById("stateFilter").value === "all";
 
+      const floorCount = jobs.filter((j) => j.status === "below_floor").length;
       const cards = [
         { label: allMode ? "YTD sales" : "Filtered sales", value: money(agg.sales), hint: "Job Total excl. 4% fee", accent: true },
         { label: allMode ? "YTD commission" : "Filtered commission", value: money2(agg.commission), hint: "Nick · 7%" },
         { label: "This month", value: money(k.thisMonthSales), hint: k.thisMonthLabel + " · " + money2(k.thisMonthCommission) + " comm." },
         { label: "Jobs", value: String(agg.count), hint: allMode ? (k.listNotVerifiedCount + " list not verified") : "in current filter" },
+        { label: "Below 10% floor", value: String(floorCount), hint: "Charged ≤ 90% of list", floor: true },
         { label: "Avg job size", value: money(agg.avg), hint: "Charged / jobs" },
         { label: "Expected payroll", value: money2(k.expectedPayrollCommission), hint: "This month commission (proxy)" },
       ];
       document.getElementById("kpis").innerHTML = cards.map((c) =>
-        `<div class="kpi${c.accent ? " accent" : ""}"><div class="label">${c.label}</div><div class="value money">${c.value}</div><div class="hint">${c.hint}</div></div>`
+        `<div class="kpi${c.accent ? " accent" : ""}${c.floor ? " floor" : ""}"><div class="label">${c.label}</div><div class="value money">${c.value}</div><div class="hint">${c.hint}</div></div>`
       ).join("");
 
       renderMonthly(agg.months);
@@ -501,6 +506,7 @@
     }
 
     function statusPill(st) {
+      if (st === "below_floor") return '<span class="pill danger">below floor</span>';
       if (st === "undersold") return '<span class="pill warn">undersold</span>';
       if (st === "oversold") return '<span class="pill ok">oversold</span>';
       if (st === "list_not_verified") return '<span class="pill muted">list n/v</span>';

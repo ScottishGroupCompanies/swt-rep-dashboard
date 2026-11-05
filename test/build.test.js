@@ -15,6 +15,8 @@ test("build writes the static site Vercel publishes", async () => {
   assert.match(html, /Nick · Commission Dashboard/);
   assert.match(html, /chart\.umd\.min\.js/);
   assert.match(html, /MoM /);
+  assert.match(html, /Below 10% floor/);
+  assert.match(html, /at or under 90% of list/);
 
   const commission = await readFile(new URL("../public/commission.js", import.meta.url), "utf8");
   assert.match(commission, /export function computeCommission/);
