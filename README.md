@@ -1,6 +1,6 @@
 # SWT Rep Dashboard
 
-Presentation demo for Scottish Window Tinting. A 4-digit gate opens a one-page commission report for sales rep **Nick** at **7%**.
+Presentation demo for Scottish Window Tinting, under the Scottish Group Companies mark. A 4-digit gate opens a one-page commission report for sales rep **Nick** at **7%**.
 
 The access code is `1234`. The check runs in the browser only and is not authentication.
 
@@ -11,6 +11,7 @@ The access code is `1234`. The check runs in the browser only and is not authent
 - Year-to-date cumulative sales and commission
 - Sales by state, residential vs commercial, and film mix
 - Month, job type, and state filters
+- Compare: two month ranges (or a quarter) side by side, with dollar and percent change and a grouped sales/commission chart
 - Recent jobs
 
 Prices exclude the 4% processing fee. Commission is pre-fee:
@@ -32,6 +33,7 @@ Example: list $1,000 at 5% → sold $1,100 is **$55**, sold $950 is **$25**, sol
 | --- | --- |
 | `src/index.html` | Page, styles, and charts |
 | `src/commission.js` | Commission rule |
+| `src/compare.js` | Period comparison |
 | `data/nick_dashboard.json` | Snapshot the page reads |
 | `scripts/build.mjs` | Writes the static site into `public/` |
 | `test/` | Commission unit tests and a build check |

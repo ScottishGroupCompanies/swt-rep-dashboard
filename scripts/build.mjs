@@ -26,4 +26,6 @@ await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 await cp(join(root, "src/index.html"), join(out, "index.html"));
 await cp(join(root, "src/commission.js"), join(out, "commission.js"));
+await cp(join(root, "src/compare.js"), join(out, "compare.js"));
+await cp(join(root, "src/favicon.svg"), join(out, "favicon.svg"));
 await writeFile(join(out, "data.json"), JSON.stringify(data));
