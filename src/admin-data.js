@@ -2,11 +2,12 @@ import { computeCommission } from "./commission.js";
 
 /** First names only. Codes without a confirmed first name stay as the sheet code. */
 export const FIRST_NAMES = {
+  BP: "Blake",
   AH: "Amy",
-  BF: "Blake",
-  DE: "Derek",
-  JS: "John",
-  SM: "Scott",
+  DH: "Dana",
+  SG: "Scott",
+  JB: "John",
+  KF: "Katie",
 };
 
 const DEMO_RATES = [0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085];
@@ -89,10 +90,8 @@ export function buildDemo(rawJobs) {
     .map((job) => priceJob(job, `${job.zoho || job.client}:2026`));
   const jobs2025 = synthesizePriorYear(rawJobs.filter((job) => job.client && job.designer && job.month));
   const codes = [...new Set(jobs2026.map((job) => job.designer))].sort();
-  if (!codes.includes("KF")) codes.push("KF");
-  if (!codes.includes("DANA")) codes.push("DANA");
   const reps = codes.map((code) => {
-    const name = code === "KF" ? "Katie" : code === "DANA" ? "Dana" : FIRST_NAMES[code] || code;
+    const name = FIRST_NAMES[code] || code;
     const rate = fakeRate(code);
     const jobs = jobs2026.filter((job) => job.designer === code);
     const sales = jobs.reduce((sum, job) => sum + job.charged, 0);
