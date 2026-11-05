@@ -177,7 +177,7 @@
       color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
     }
     .delta.up { color: var(--ok); font-weight: 600; }
-    .delta.down { color: var(--warn); font-weight: 600; }
+    .delta.down { color: var(--danger); font-weight: 600; }
     .compare-lower { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 14px; margin-top: 14px; }
     .compare-lower > div { min-width: 0; }
     @media (max-width: 960px) { .compare-lower { grid-template-columns: minmax(0, 1fr); } }
@@ -282,7 +282,7 @@
 
     <section class="card compare" id="compare">
       <h2>Compare</h2>
-      <p class="caption">Period A versus Period B. Change is A minus B. Pick a month range, such as Sep 2026–Oct 2026, or a quarter.</p>
+      <p class="caption">Pick two month ranges or quarters. Change is the later period minus the earlier period, as a percent of the earlier period.</p>
       <div class="compare-toolbar">
         <button type="button" id="presetMonth">This month vs last month</button>
         <button type="button" id="presetQuarter">This quarter vs last quarter</button>
@@ -306,9 +306,9 @@
           <thead>
             <tr>
               <th>Metric</th>
-              <th id="compareHeadA">Period A</th>
-              <th id="compareHeadB">Period B</th>
-              <th>Change</th>
+              <th id="compareHeadEarlier">Earlier</th>
+              <th id="compareHeadLater">Later</th>
+              <th id="compareHeadChange">Change</th>
               <th>%</th>
             </tr>
           </thead>
@@ -326,7 +326,7 @@
           <div style="overflow-x:auto">
             <table class="compare-table">
               <thead>
-                <tr><th>Type</th><th>A sales</th><th>B sales</th><th>Change</th><th>%</th></tr>
+                <tr><th>Type</th><th id="compareTypeEarlier">Earlier</th><th id="compareTypeLater">Later</th><th id="compareTypeChange">Change</th><th>%</th></tr>
               </thead>
               <tbody id="compareTypes"></tbody>
             </table>
@@ -335,7 +335,7 @@
           <div style="overflow-x:auto">
             <table class="compare-table">
               <thead>
-                <tr><th>State</th><th>A sales</th><th>B sales</th><th>Change</th><th>%</th></tr>
+                <tr><th>State</th><th id="compareStateEarlier">Earlier</th><th id="compareStateLater">Later</th><th id="compareStateChange">Change</th><th>%</th></tr>
               </thead>
               <tbody id="compareStates"></tbody>
             </table>
@@ -369,11 +369,11 @@
   <script type="module">
     import { computeCommission } from "./commission.js";
     import {
-      change,
       comparePeriods,
       listQuarters,
       presets,
-      rangeLabel,
+      orientPeriods,
+      periodChange,
       topStates,
       typeRows,
     } from "./compare.js";
@@ -763,16 +763,23 @@
     function renderCompare() {
       const ranges = currentRanges();
       const { a, b } = comparePeriods(DATA.jobs, ranges.a, ranges.b);
-      const labelA = rangeLabel(a.start, a.end);
-      const labelB = rangeLabel(b.start, b.end);
-      document.getElementById("compareHeadA").textContent = labelA;
-      document.getElementById("compareHeadB").textContent = labelB;
+      const direction = orientPeriods(a, b);
+      const { earlier, later, earlierLabel, laterLabel, label } = direction;
+      document.getElementById("compareHeadEarlier").textContent = earlierLabel;
+      document.getElementById("compareHeadLater").textContent = laterLabel;
+      document.getElementById("compareHeadChange").textContent = label;
+      document.getElementById("compareTypeEarlier").textContent = earlierLabel;
+      document.getElementById("compareTypeLater").textContent = laterLabel;
+      document.getElementById("compareTypeChange").textContent = label;
+      document.getElementById("compareStateEarlier").textContent = earlierLabel;
+      document.getElementById("compareStateLater").textContent = laterLabel;
+      document.getElementById("compareStateChange").textContent = label;
       const rows = [
-        ["Sales", money2(a.sales), money2(b.sales), change(a.sales, b.sales), true],
-        ["Commission", money2(a.commission), money2(b.commission), change(a.commission, b.commission), true],
-        ["Jobs", String(a.count), String(b.count), change(a.count, b.count), false],
-        ["Avg job size", money2(a.avg), money2(b.avg), change(a.avg, b.avg), true],
-        ["Below 10% floor", String(a.belowFloor), String(b.belowFloor), change(a.belowFloor, b.belowFloor), false],
+        ["Sales", money2(earlier.sales), money2(later.sales), periodChange(a, b, (period) => period.sales), true],
+        ["Commission", money2(earlier.commission), money2(later.commission), periodChange(a, b, (period) => period.commission), true],
+        ["Jobs", String(earlier.count), String(later.count), periodChange(a, b, (period) => period.count), false],
+        ["Avg job size", money2(earlier.avg), money2(later.avg), periodChange(a, b, (period) => period.avg), true],
+        ["Below 10% floor", String(earlier.belowFloor), String(later.belowFloor), periodChange(a, b, (period) => period.belowFloor), false],
       ];
       document.getElementById("compareBody").innerHTML = rows.map(([name, left, right, delta, money]) => {
         const amount = money ? signedMoney(delta.diff) : signedCount(delta.diff);
@@ -785,10 +792,10 @@
         </tr>`;
       }).join("");
 
-      const typeBody = typeRows(a, b).filter((row) => row.a.jobs || row.b.jobs).map((row) => `<tr>
+      const typeBody = typeRows(a, b).filter((row) => row.earlier.jobs || row.later.jobs).map((row) => `<tr>
           <td>${row.name}</td>
-          <td class="money">${money2(row.a.sales)}</td>
-          <td class="money">${money2(row.b.sales)}</td>
+          <td class="money">${money2(row.earlier.sales)}</td>
+          <td class="money">${money2(row.later.sales)}</td>
           <td class="money delta ${deltaClass(row.change.diff)}">${signedMoney(row.change.diff)}</td>
           <td class="delta ${deltaClass(row.change.pct || 0)}">${fmtPct(row.change.pct)}</td>
         </tr>`).join("") || `<tr><td colspan="5">No jobs in these ranges</td></tr>`;
@@ -796,8 +803,8 @@
 
       const stateBody = topStates(a, b).map((row) => `<tr>
           <td>${row.state}</td>
-          <td class="money">${money2(row.a.sales)}</td>
-          <td class="money">${money2(row.b.sales)}</td>
+          <td class="money">${money2(row.earlier.sales)}</td>
+          <td class="money">${money2(row.later.sales)}</td>
           <td class="money delta ${deltaClass(row.change.diff)}">${signedMoney(row.change.diff)}</td>
           <td class="delta ${deltaClass(row.change.pct || 0)}">${fmtPct(row.change.pct)}</td>
         </tr>`).join("") || `<tr><td colspan="5">No jobs in these ranges</td></tr>`;
@@ -807,10 +814,10 @@
       charts.compare = new Chart(document.getElementById("compareChart"), {
         type: "bar",
         data: {
-          labels: [labelA, labelB],
+          labels: [earlierLabel, laterLabel],
           datasets: [
-            { label: "Sales", data: [a.sales, b.sales], backgroundColor: "rgba(27,42,74,.9)", borderRadius: 6 },
-            { label: "Commission", data: [a.commission, b.commission], backgroundColor: "rgba(78,98,138,.9)", borderRadius: 6 },
+            { label: "Sales", data: [earlier.sales, later.sales], backgroundColor: "rgba(27,42,74,.9)", borderRadius: 6 },
+            { label: "Commission", data: [earlier.commission, later.commission], backgroundColor: "rgba(78,98,138,.9)", borderRadius: 6 },
           ],
         },
         options: {

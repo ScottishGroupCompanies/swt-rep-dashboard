@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   change,
   comparePeriods,
+  orientPeriods,
+  periodChange,
   presets,
   rangeLabel,
   topStates,
@@ -35,19 +37,19 @@ test("Sep 2026–Oct 2026 includes both months and reports the split", () => {
 
   const types = typeRows(a, b);
   assert.deepEqual(types.map((row) => row.name), ["Residential", "Commercial"]);
-  assert.equal(types[0].a.sales, 150);
-  assert.equal(types[1].a.sales, 200);
-  assert.equal(types[1].b.sales, 80);
+  assert.equal(types[0].earlier.sales, 150);
+  assert.equal(types[1].earlier.sales, 200);
+  assert.equal(types[1].later.sales, 80);
 
   const states = topStates(a, b, 5);
   assert.equal(states[0].state, "CO");
-  assert.equal(states[0].a.sales, 150);
-  assert.equal(states[0].b.sales, 80);
+  assert.equal(states[0].earlier.sales, 150);
+  assert.equal(states[0].later.sales, 80);
   assert.equal(states[1].state, "TX");
-  assert.equal(states[1].change.diff, 200);
+  assert.equal(states[1].change.diff, -200);
 });
 
-test("change is Period A minus Period B, with no percent when the baseline is zero", () => {
+test("change is the later value minus the earlier value, with no percent when the earlier value is zero", () => {
   assert.deepEqual(change(110, 100), { diff: 10, pct: 10 });
   assert.equal(change(95, 100).pct, -5);
   assert.deepEqual(change(0, 0), { diff: 0, pct: 0 });
@@ -91,4 +93,29 @@ test("Nick snapshot Nov vs Oct uses stored job totals", async () => {
   assert.equal(preset.quarter.a.start, "2026-10");
   assert.equal(preset.quarter.b.start, "2026-07");
   assert.equal(preset.quarter.b.end, "2026-09");
+});
+
+test("Sep 2026 to Oct 2026 is +$14,569.56 / +306.1% in either slot", async () => {
+  const data = JSON.parse(await readFile(new URL("../data/nick_dashboard.json", import.meta.url), "utf8"));
+  const sep = { start: "2026-09", end: "2026-09" };
+  const oct = { start: "2026-10", end: "2026-10" };
+  const fields = ["sales", "commission", "count", "avg", "belowFloor"];
+
+  for (const [rangeA, rangeB] of [[sep, oct], [oct, sep]]) {
+    const { a, b } = comparePeriods(data.jobs, rangeA, rangeB);
+    const direction = orientPeriods(a, b);
+    assert.equal(direction.label, "Sep 2026 → Oct 2026");
+    assert.equal(Math.round(direction.earlier.sales * 100), 475904);
+    assert.equal(Math.round(direction.later.sales * 100), 1932860);
+    const sales = periodChange(a, b, (period) => period.sales);
+    assert.equal(Math.round(sales.diff * 100), 1456956);
+    assert.equal(sales.pct.toFixed(1), "306.1");
+    for (const field of fields) {
+      const delta = periodChange(a, b, (period) => period[field]);
+      assert.equal(delta.diff, direction.later[field] - direction.earlier[field], field);
+    }
+    for (const row of [...typeRows(a, b), ...topStates(a, b)]) {
+      assert.equal(row.change.diff, row.later.sales - row.earlier.sales);
+    }
+  }
 });
