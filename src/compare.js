@@ -1,6 +1,7 @@
 /**
  * Period comparison for the rep dashboard.
- * Change is Period A minus Period B. Ranges are inclusive month keys (YYYY-MM).
+ * Change is the later period minus the earlier period, as a percent of the
+ * earlier period. Ranges are inclusive month keys (YYYY-MM).
  */
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -135,6 +136,28 @@ export function change(current, baseline) {
   return { diff, pct: (diff / Math.abs(baseline)) * 100 };
 }
 
+export function orientPeriods(summaryA, summaryB) {
+  const aIsLater =
+    summaryA.start > summaryB.start ||
+    (summaryA.start === summaryB.start && summaryA.end > summaryB.end);
+  const earlier = aIsLater ? summaryB : summaryA;
+  const later = aIsLater ? summaryA : summaryB;
+  const earlierLabel = rangeLabel(earlier.start, earlier.end);
+  const laterLabel = rangeLabel(later.start, later.end);
+  return {
+    earlier,
+    later,
+    earlierLabel,
+    laterLabel,
+    label: `${earlierLabel} → ${laterLabel}`,
+  };
+}
+
+export function periodChange(summaryA, summaryB, valueOf) {
+  const { earlier, later } = orientPeriods(summaryA, summaryB);
+  return change(valueOf(later), valueOf(earlier));
+}
+
 export function comparePeriods(jobs, rangeA, rangeB) {
   return {
     a: summarizePeriod(jobs, rangeA.start, rangeA.end),
@@ -142,7 +165,12 @@ export function comparePeriods(jobs, rangeA, rangeB) {
   };
 }
 
+function bucket(summary, group, name) {
+  return summary[group][name] || { sales: 0, commission: 0, jobs: 0 };
+}
+
 export function typeRows(summaryA, summaryB) {
+  const { earlier, later } = orientPeriods(summaryA, summaryB);
   const preferred = ["Residential", "Commercial"];
   const names = [
     ...preferred,
@@ -151,20 +179,34 @@ export function typeRows(summaryA, summaryB) {
       .sort(),
   ];
   return names.map((name) => {
-    const a = summaryA.byType[name] || { sales: 0, commission: 0, jobs: 0 };
-    const b = summaryB.byType[name] || { sales: 0, commission: 0, jobs: 0 };
-    return { name, a, b, change: change(a.sales, b.sales) };
+    const earlierValues = bucket(earlier, "byType", name);
+    const laterValues = bucket(later, "byType", name);
+    return {
+      name,
+      earlier: earlierValues,
+      later: laterValues,
+      change: change(laterValues.sales, earlierValues.sales),
+    };
   });
 }
 
 export function topStates(summaryA, summaryB, limit = 5) {
+  const { earlier, later } = orientPeriods(summaryA, summaryB);
   const names = new Set([...Object.keys(summaryA.byState), ...Object.keys(summaryB.byState)]);
   return [...names]
     .map((state) => {
-      const a = summaryA.byState[state] || { sales: 0, commission: 0, jobs: 0 };
-      const b = summaryB.byState[state] || { sales: 0, commission: 0, jobs: 0 };
-      return { state, a, b, change: change(a.sales, b.sales) };
+      const earlierValues = bucket(earlier, "byState", state);
+      const laterValues = bucket(later, "byState", state);
+      return {
+        state,
+        earlier: earlierValues,
+        later: laterValues,
+        change: change(laterValues.sales, earlierValues.sales),
+      };
     })
-    .sort((left, right) => right.a.sales + right.b.sales - (left.a.sales + left.b.sales))
+    .sort(
+      (left, right) =>
+        right.earlier.sales + right.later.sales - (left.earlier.sales + left.later.sales),
+    )
     .slice(0, limit);
 }

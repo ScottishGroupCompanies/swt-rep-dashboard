@@ -11,7 +11,7 @@ The access code is `1234`. The check runs in the browser only and is not authent
 - Year-to-date cumulative sales and commission
 - Sales by state, residential vs commercial, and film mix
 - Month, job type, and state filters
-- Compare: two month ranges (or a quarter) side by side, with dollar and percent change and a grouped sales/commission chart
+- Compare: two month ranges (or a quarter) side by side. Change is the later period minus the earlier period, labeled by period name, with a grouped sales/commission chart
 - Recent jobs
 
 Prices exclude the 4% processing fee. Commission is pre-fee:
