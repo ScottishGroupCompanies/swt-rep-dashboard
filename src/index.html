@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SWT Rep Dashboard — Nick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --navy: #0b1f33;
+      --navy-2: #122a44;
+      --ink: #0f172a;
+      --muted: #5b6b7c;
+      --line: #d7e0ea;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --accent: #1f6feb;
+      --accent-2: #0ea5a4;
+      --gold: #c9a227;
+      --ok: #15803d;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --shadow: 0 10px 30px rgba(11, 31, 51, 0.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+      font-family: "DM Sans", system-ui, sans-serif; }
+    body.locked { overflow: hidden; }
+    .gate {
+      position: fixed; inset: 0; z-index: 50;
+      display: grid; place-items: center;
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(31,111,235,.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 100%, rgba(14,165,164,.2), transparent 55%),
+        linear-gradient(160deg, #071525, #0b1f33 55%, #122a44);
+      color: #fff;
+    }
+    .gate.hidden { display: none; }
+    .gate-card {
+      width: min(420px, 92vw); padding: 36px 32px 28px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 22px; backdrop-filter: blur(10px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); text-align: center;
+    }
+    .brand-mark {
+      width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 14px;
+      background: linear-gradient(145deg, #1f6feb, #0ea5a4);
+      display: grid; place-items: center; font-weight: 700; letter-spacing: .04em;
+      box-shadow: 0 8px 24px rgba(31,111,235,.35);
+    }
+    .gate h1 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
+      font-size: 2rem; margin: 0 0 6px; }
+    .gate p { color: rgba(255,255,255,.72); margin: 0 0 22px; font-size: .95rem; }
+    .pin-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+    .pin-row input {
+      width: 52px; height: 60px; text-align: center; font-size: 1.6rem; font-weight: 600;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
+      background: rgba(0,0,0,.25); color: #fff; outline: none;
+    }
+    .pin-row input:focus { border-color: #7db0ff; box-shadow: 0 0 0 3px rgba(125,176,255,.25); }
+    .gate button {
+      width: 100%; margin-top: 8px; padding: 14px 16px; border: 0; border-radius: 12px;
+      background: linear-gradient(135deg, #1f6feb, #0ea5a4); color: #fff;
+      font-weight: 600; font-size: 1rem; cursor: pointer;
+    }
+    .gate-error { color: #fecaca; min-height: 1.2em; font-size: .85rem; margin-top: 10px; }
+    .gate-note { margin-top: 18px; font-size: .75rem; color: rgba(255,255,255,.45); }
+
+    .app { display: none; max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
+    .app.visible { display: block; }
+    header.top {
+      display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+      justify-content: space-between; margin-bottom: 22px;
+    }
+    .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem;
+      color: var(--accent); font-weight: 700; margin: 0 0 6px; }
+    h1.page-title { font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
+      font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0; color: var(--navy); }
+    .sub { color: var(--muted); margin: 6px 0 0; font-size: .95rem; }
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 10px 12px; box-shadow: var(--shadow);
+    }
+    .filters label { font-size: .78rem; color: var(--muted); font-weight: 600; }
+    .filters select, .filters input {
+      border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+      font: inherit; background: #fff; min-width: 140px;
+    }
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 18px 0 20px;
+    }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .kpi {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 16px 16px 14px; box-shadow: var(--shadow); min-height: 96px;
+    }
+    .kpi .label { font-size: .75rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+    .kpi .value { font-size: 1.35rem; font-weight: 700; color: var(--navy); letter-spacing: -.02em; }
+    .kpi .hint { font-size: .72rem; color: var(--muted); margin-top: 6px; }
+    .kpi.accent { background: linear-gradient(160deg, #0b1f33, #16375a); color: #fff; border: 0; }
+    .kpi.accent .label, .kpi.accent .hint { color: rgba(255,255,255,.7); }
+    .kpi.accent .value { color: #fff; }
+
+    .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 960px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px; box-shadow: var(--shadow);
+    }
+    .card h2 { margin: 0 0 4px; font-size: 1.05rem; color: var(--navy); }
+    .card .caption { color: var(--muted); font-size: .82rem; margin: 0 0 14px; }
+    .chart-wrap { position: relative; height: 280px; }
+    .chart-wrap.sm { height: 240px; }
+
+    table.jobs { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    table.jobs th, table.jobs td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    table.jobs th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+    table.jobs tr:hover td { background: #f8fbff; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600;
+      background: #eef2f7; color: var(--navy);
+    }
+    .pill.warn { background: #fff7ed; color: var(--warn); }
+    .pill.ok { background: #ecfdf5; color: var(--ok); }
+    .pill.muted { background: #f1f5f9; color: var(--muted); }
+    footer.site {
+      margin-top: 28px; color: var(--muted); font-size: .78rem; line-height: 1.5;
+      border-top: 1px solid var(--line); padding-top: 16px;
+    }
+    .state-bars { display: flex; flex-direction: column; gap: 8px; }
+    .state-row { display: grid; grid-template-columns: 64px 1fr 72px; gap: 8px; align-items: center; font-size: .82rem; }
+    .state-row .bar { height: 10px; background: #e8eef5; border-radius: 999px; overflow: hidden; }
+    .state-row .fill { height: 100%; background: linear-gradient(90deg, #1f6feb, #0ea5a4); border-radius: 999px; }
+    .money { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="locked">
+  <div class="gate" id="gate">
+    <div class="gate-card">
+      <div class="brand-mark">SWT</div>
+      <h1>Rep Dashboard</h1>
+      <p>Scottish Window Tinting · Sales performance</p>
+      <div class="pin-row" id="pinRow">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 1" />
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 2" />
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 3" />
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 4" />
+      </div>
+      <button type="button" id="unlockBtn">Unlock dashboard</button>
+      <div class="gate-error" id="gateError"></div>
+      <div class="gate-note">Demo access gate — client-side only, not real security.</div>
+    </div>
+  </div>
+
+  <main class="app" id="app">
+    <header class="top">
+      <div>
+        <p class="eyebrow">Scottish Window Tinting</p>
+        <h1 class="page-title">Nick · Commission Dashboard</h1>
+        <p class="sub">7% commission · 2026 YTD · Data as of <span id="asOf"></span></p>
+      </div>
+      <div class="filters">
+        <div>
+          <label for="monthFilter">Month</label><br/>
+          <select id="monthFilter"><option value="all">All months</option></select>
+        </div>
+        <div>
+          <label for="typeFilter">Job type</label><br/>
+          <select id="typeFilter"><option value="all">All types</option></select>
+        </div>
+        <div>
+          <label for="stateFilter">State</label><br/>
+          <select id="stateFilter"><option value="all">All states</option></select>
+        </div>
+      </div>
+    </header>
+
+    <section class="kpi-grid" id="kpis"></section>
+
+    <section class="grid-2">
+      <div class="card">
+        <h2>Monthly sales &amp; commission</h2>
+        <p class="caption">Bars = sales · Line = commission · MoM change on hover</p>
+        <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>YTD cumulative</h2>
+        <p class="caption">Running total of sales and commission</p>
+        <div class="chart-wrap"><canvas id="cumChart"></canvas></div>
+      </div>
+    </section>
+
+    <section class="grid-3">
+      <div class="card">
+        <h2>By state / market</h2>
+        <p class="caption">Jobs and sales by location</p>
+        <div class="state-bars" id="stateBars"></div>
+      </div>
+      <div class="card">
+        <h2>Residential vs commercial</h2>
+        <p class="caption">Job Type split</p>
+        <div class="chart-wrap sm"><canvas id="typeChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Film type mix</h2>
+        <p class="caption">From sheet Film Type</p>
+        <div class="chart-wrap sm"><canvas id="filmChart"></canvas></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Recent jobs</h2>
+      <p class="caption" id="jobsCaption">Filtered jobs</p>
+      <div style="overflow-x:auto">
+        <table class="jobs">
+          <thead>
+            <tr>
+              <th>Date</th><th>ZOHO #</th><th>Client</th><th>Type</th><th>Location</th>
+              <th>Charged</th><th>Commission</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="jobsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="site">
+      <div><strong>Commission rule</strong> (pre-fee): at/over list → rate × charged; undersold → rate × (list − 50% of shortfall); no list → rate × charged (list not verified).</div>
+      <div id="metaNote" style="margin-top:6px"></div>
+    </footer>
+  </main>
+
+  <script type="module">
+    import { computeCommission } from "./commission.js";
+
+    const CODE = "1234";
+    const money = (n) => n == null || Number.isNaN(n) ? "—" :
+      "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const money2 = (n) => n == null || Number.isNaN(n) ? "—" :
+      "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Gate
+    const inputs = [...document.querySelectorAll("#pinRow input")];
+    const gateError = document.getElementById("gateError");
+    inputs.forEach((inp, i) => {
+      inp.addEventListener("input", () => {
+        inp.value = inp.value.replace(/\D/g, "").slice(0, 1);
+        if (inp.value && i < inputs.length - 1) inputs[i + 1].focus();
+        if (inputs.every((x) => x.value)) tryUnlock();
+      });
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && !inp.value && i > 0) inputs[i - 1].focus();
+        if (e.key === "Enter") tryUnlock();
+      });
+    });
+    document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
+    function tryUnlock() {
+      const code = inputs.map((i) => i.value).join("");
+      if (code !== CODE) {
+        gateError.textContent = "Incorrect code. Try again.";
+        inputs.forEach((i) => (i.value = ""));
+        inputs[0].focus();
+        return;
+      }
+      document.getElementById("gate").classList.add("hidden");
+      document.body.classList.remove("locked");
+      document.getElementById("app").classList.add("visible");
+      boot();
+    }
+
+    let DATA = null;
+    let charts = {};
+
+    async function boot() {
+      const res = await fetch("./data.json");
+      DATA = await res.json();
+      // sanity: engine available
+      void computeCommission;
+      document.getElementById("asOf").textContent = DATA.asOf;
+      document.getElementById("metaNote").textContent = DATA.meta.note;
+      fillFilters();
+      ["monthFilter", "typeFilter", "stateFilter"].forEach((id) =>
+        document.getElementById(id).addEventListener("change", render)
+      );
+      render();
+    }
+
+    function fillFilters() {
+      const months = DATA.months;
+      const mf = document.getElementById("monthFilter");
+      months.forEach((m) => {
+        const o = document.createElement("option");
+        o.value = m.key; o.textContent = m.label; mf.appendChild(o);
+      });
+      const types = [...new Set(DATA.jobs.map((j) => j.jobType))].sort();
+      const tf = document.getElementById("typeFilter");
+      types.forEach((t) => {
+        const o = document.createElement("option");
+        o.value = t; o.textContent = t; tf.appendChild(o);
+      });
+      const states = [...new Set(DATA.jobs.map((j) => j.state))].sort();
+      const sf = document.getElementById("stateFilter");
+      states.forEach((s) => {
+        const o = document.createElement("option");
+        o.value = s; o.textContent = s; sf.appendChild(o);
+      });
+    }
+
+    function filteredJobs() {
+      const month = document.getElementById("monthFilter").value;
+      const type = document.getElementById("typeFilter").value;
+      const state = document.getElementById("stateFilter").value;
+      return DATA.jobs.filter((j) => {
+        if (month !== "all" && j.monthKey !== month) return false;
+        if (type !== "all" && j.jobType !== type) return false;
+        if (state !== "all" && j.state !== state) return false;
+        return true;
+      });
+    }
+
+    function aggregate(jobs) {
+      const sales = jobs.reduce((a, j) => a + j.charged, 0);
+      const commission = jobs.reduce((a, j) => a + (j.commission || 0), 0);
+      const byMonth = {};
+      DATA.months.forEach((m) => { byMonth[m.key] = { sales: 0, commission: 0, jobs: 0, label: m.label }; });
+      jobs.forEach((j) => {
+        if (!j.monthKey || !byMonth[j.monthKey]) return;
+        byMonth[j.monthKey].sales += j.charged;
+        byMonth[j.monthKey].commission += j.commission || 0;
+        byMonth[j.monthKey].jobs += 1;
+      });
+      const months = Object.keys(byMonth).sort().map((k) => {
+        const m = byMonth[k];
+        return { key: k, label: m.label, sales: m.sales, commission: m.commission, jobs: m.jobs };
+      });
+      let cumS = 0, cumC = 0;
+      months.forEach((m) => { cumS += m.sales; cumC += m.commission; m.cumSales = cumS; m.cumCommission = cumC; });
+      const byState = {};
+      jobs.forEach((j) => {
+        const s = j.state || "Unknown";
+        byState[s] = byState[s] || { state: s, sales: 0, jobs: 0 };
+        byState[s].sales += j.charged; byState[s].jobs += 1;
+      });
+      const byType = {};
+      jobs.forEach((j) => {
+        byType[j.jobType] = byType[j.jobType] || { type: j.jobType, sales: 0, jobs: 0 };
+        byType[j.jobType].sales += j.charged; byType[j.jobType].jobs += 1;
+      });
+      const byFilm = {};
+      jobs.forEach((j) => {
+        byFilm[j.filmType] = byFilm[j.filmType] || { film: j.filmType, sales: 0, jobs: 0 };
+        byFilm[j.filmType].sales += j.charged; byFilm[j.filmType].jobs += 1;
+      });
+      return {
+        sales, commission, count: jobs.length,
+        avg: jobs.length ? sales / jobs.length : 0,
+        months,
+        states: Object.values(byState).sort((a, b) => b.sales - a.sales),
+        types: Object.values(byType).sort((a, b) => b.sales - a.sales),
+        films: Object.values(byFilm).sort((a, b) => b.sales - a.sales),
+      };
+    }
+
+    function render() {
+      const jobs = filteredJobs();
+      const agg = aggregate(jobs);
+      const k = DATA.kpis;
+      const allMode = document.getElementById("monthFilter").value === "all"
+        && document.getElementById("typeFilter").value === "all"
+        && document.getElementById("stateFilter").value === "all";
+
+      const cards = [
+        { label: allMode ? "YTD sales" : "Filtered sales", value: money(agg.sales), hint: "Job Total excl. 4% fee", accent: true },
+        { label: allMode ? "YTD commission" : "Filtered commission", value: money2(agg.commission), hint: "Nick · 7%" },
+        { label: "This month", value: money(k.thisMonthSales), hint: k.thisMonthLabel + " · " + money2(k.thisMonthCommission) + " comm." },
+        { label: "Jobs", value: String(agg.count), hint: allMode ? (k.listNotVerifiedCount + " list not verified") : "in current filter" },
+        { label: "Avg job size", value: money(agg.avg), hint: "Charged / jobs" },
+        { label: "Expected payroll", value: money2(k.expectedPayrollCommission), hint: "This month commission (proxy)" },
+      ];
+      document.getElementById("kpis").innerHTML = cards.map((c) =>
+        `<div class="kpi${c.accent ? " accent" : ""}"><div class="label">${c.label}</div><div class="value money">${c.value}</div><div class="hint">${c.hint}</div></div>`
+      ).join("");
+
+      renderMonthly(agg.months);
+      renderCum(agg.months);
+      renderStates(agg.states);
+      renderType(agg.types);
+      renderFilm(agg.films);
+      renderTable(jobs);
+    }
+
+    function destroy(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+    function renderMonthly(months) {
+      destroy("monthly");
+      const labels = months.map((m) => m.label);
+      charts.monthly = new Chart(document.getElementById("monthlyChart"), {
+        data: {
+          labels,
+          datasets: [
+            { type: "bar", label: "Sales", data: months.map((m) => m.sales),
+              backgroundColor: "rgba(31,111,235,.75)", borderRadius: 6, yAxisID: "y" },
+            { type: "line", label: "Commission", data: months.map((m) => m.commission),
+              borderColor: "#0ea5a4", backgroundColor: "rgba(14,165,164,.15)",
+              tension: .35, fill: false, yAxisID: "y1", pointRadius: 3 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { position: "bottom" },
+            tooltip: {
+              callbacks: {
+                footer(items) {
+                  const i = items[0]?.dataIndex ?? 0;
+                  if (i <= 0) return "MoM —";
+                  const prev = months[i - 1].sales;
+                  const cur = months[i].sales;
+                  if (!prev) return "MoM —";
+                  const pct = ((cur - prev) / prev) * 100;
+                  const sign = pct > 0 ? "+" : "";
+                  return "MoM " + sign + pct.toFixed(1) + "%";
+                },
+              },
+            },
+          },
+          scales: {
+            y: { ticks: { callback: (v) => "$" + (v/1000) + "k" }, grid: { color: "#eef2f7" } },
+            y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { callback: (v) => "$" + v } },
+          },
+        },
+      });
+    }
+
+    function renderCum(months) {
+      destroy("cum");
+      charts.cum = new Chart(document.getElementById("cumChart"), {
+        type: "line",
+        data: {
+          labels: months.map((m) => m.label),
+          datasets: [
+            { label: "Cumulative sales", data: months.map((m) => m.cumSales),
+              borderColor: "#1f6feb", tension: .3, fill: false },
+            { label: "Cumulative commission", data: months.map((m) => m.cumCommission),
+              borderColor: "#c9a227", tension: .3, fill: false },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { ticks: { callback: (v) => "$" + (v/1000).toFixed(0) + "k" }, grid: { color: "#eef2f7" } } },
+        },
+      });
+    }
+
+    function renderStates(states) {
+      const max = Math.max(...states.map((s) => s.sales), 1);
+      document.getElementById("stateBars").innerHTML = states.slice(0, 8).map((s) =>
+        `<div class="state-row"><div>${s.state}</div><div class="bar"><div class="fill" style="width:${(s.sales/max*100).toFixed(1)}%"></div></div><div class="money">${money(s.sales)}</div></div>`
+      ).join("") || "<div class='caption'>No data</div>";
+    }
+
+    function renderType(types) {
+      destroy("type");
+      const colors = ["#1f6feb", "#0ea5a4", "#c9a227", "#64748b", "#a78bfa"];
+      charts.type = new Chart(document.getElementById("typeChart"), {
+        type: "doughnut",
+        data: {
+          labels: types.map((t) => t.type),
+          datasets: [{ data: types.map((t) => t.sales), backgroundColor: colors.slice(0, types.length) }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+      });
+    }
+
+    function renderFilm(films) {
+      destroy("film");
+      charts.film = new Chart(document.getElementById("filmChart"), {
+        type: "bar",
+        data: {
+          labels: films.slice(0, 6).map((f) => f.film),
+          datasets: [{ label: "Sales", data: films.slice(0, 6).map((f) => f.sales),
+            backgroundColor: "rgba(14,165,164,.8)", borderRadius: 6 }],
+        },
+        options: {
+          indexAxis: "y", responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { ticks: { callback: (v) => "$" + (v/1000) + "k" }, grid: { color: "#eef2f7" } } },
+        },
+      });
+    }
+
+    function statusPill(st) {
+      if (st === "undersold") return '<span class="pill warn">undersold</span>';
+      if (st === "oversold") return '<span class="pill ok">oversold</span>';
+      if (st === "list_not_verified") return '<span class="pill muted">list n/v</span>';
+      if (st === "ok") return '<span class="pill ok">ok</span>';
+      return `<span class="pill">${st}</span>`;
+    }
+
+    function renderTable(jobs) {
+      const sorted = [...jobs].sort((a, b) => (b.dateSoldIso || "").localeCompare(a.dateSoldIso || ""));
+      document.getElementById("jobsCaption").textContent = `${sorted.length} jobs · newest first`;
+      document.getElementById("jobsBody").innerHTML = sorted.slice(0, 40).map((j) =>
+        `<tr>
+          <td>${j.dateSold || "—"}</td>
+          <td>${j.zoho}</td>
+          <td>${j.client}</td>
+          <td>${j.jobType}</td>
+          <td>${j.location || "—"}</td>
+          <td class="money">${money2(j.charged)}</td>
+          <td class="money">${money2(j.commission)}</td>
+          <td>${statusPill(j.status)}</td>
+        </tr>`
+      ).join("");
+    }
+  </script>
+</body>
+</html>
