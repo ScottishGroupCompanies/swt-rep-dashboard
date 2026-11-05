@@ -1,6 +1,6 @@
 import { computeCommission } from "./commission.js";
 
-/** First names only. Codes without a confirmed first name stay as the sheet code. */
+/** Scottish Window Tinting reps only. First names; Katie is never shown with a surname. */
 export const FIRST_NAMES = {
   BP: "Blake",
   AH: "Amy",
@@ -9,6 +9,8 @@ export const FIRST_NAMES = {
   JB: "John",
   KF: "Katie",
 };
+
+export const SWT_REP_CODES = new Set(Object.keys(FIRST_NAMES));
 
 const DEMO_RATES = [0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085];
 
@@ -85,10 +87,11 @@ export function synthesizePriorYear(jobs) {
 }
 
 export function buildDemo(rawJobs) {
-  const jobs2026 = rawJobs
-    .filter((job) => job.client && job.designer && job.month)
-    .map((job) => priceJob(job, `${job.zoho || job.client}:2026`));
-  const jobs2025 = synthesizePriorYear(rawJobs.filter((job) => job.client && job.designer && job.month));
+  const swtJobs = rawJobs.filter(
+    (job) => job.client && job.month && SWT_REP_CODES.has(job.designer),
+  );
+  const jobs2026 = swtJobs.map((job) => priceJob(job, `${job.zoho || job.client}:2026`));
+  const jobs2025 = synthesizePriorYear(swtJobs);
   const codes = [...new Set(jobs2026.map((job) => job.designer))].sort();
   const reps = codes.map((code) => {
     const name = FIRST_NAMES[code] || code;
