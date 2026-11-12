@@ -1,45 +1,141 @@
-# SWT Rep Dashboard
+# Scottish Group Companies rep dashboard
 
-Presentation demo for Scottish Window Tinting, under the Scottish Group Companies mark. A 4-digit gate opens a one-page commission report for sales rep **Nick** at **7%**.
+Sales dashboards for **Scottish Window Tinting (SWT)** and **Scottish Stained Glass (SSG)**. Each active rep signs in to their own sales. Jenny's login is the admin view for both companies. The page shows sales only. Commission is stored for a later update and is not shown.
 
-The rep access code is `1234` (Nick). The admin code is `0000` (sales team, simulated dollars). Both checks run in the browser only and are not authentication.
+Real job files, rep codes, and sign-in codes are not part of this repository. The browser downloads no sales file until someone signs in, and the static site contains none.
 
-## What the page shows
+## Sign-in
 
-- KPIs: year-to-date sales, year-to-date commission, this month, jobs, below-10% floor count, average job, expected payroll
-- Monthly sales (bars) and commission (line), with month-over-month sales change in the tooltip
-- Year-to-date cumulative sales and commission
-- Sales by state, residential vs commercial, and film mix
-- Month, job type, and state filters
-- Compare: two month ranges (or a quarter) side by side. Change is the later period minus the earlier period, labeled by period name, with a grouped sales/commission chart
-- Recent jobs
+The name list is `DASHBOARD_LOGINS`, a server environment variable. It is not written in the app. One login covers a person who sells for both companies: the company switch then shows SWT and SSG. Reps only receive their own jobs. Inactive reps are not given logins by the generator below. They still appear on the admin leaderboard.
 
-Prices exclude the 4% processing fee. Commission is pre-fee:
+`HOO` is a non-person code. It never gets a login or a personal dashboard, even if a row marks it active and even if it is pasted into `DASHBOARD_LOGINS`. Its sales stay in the admin company totals and leaderboard. Add more non-person codes with `DASHBOARD_EXCLUDE_REPS` (comma-separated). That does not require an application change.
 
-| Case | Commission |
+Display names in the dashboard are the first name only (`Ada Example` is shown as Ada). Initials that are a single word stay as written.
+
+For the first setup, put `0000` in the gitignored login file for every person. Change one person's code later by editing that file and replacing the `DASHBOARD_LOGINS` value. No application change is required.
+
+```bash
+cp logins.example.json logins.local.json
+# edit codes, then:
+node scripts/hash-logins.mjs
+```
+
+Or build the list from a local `reps.json` (active people only, one login per person, `HOO` skipped):
+
+```bash
+LOGINS_CODE='0000' node scripts/hash-logins.mjs --from-reps /secure/reps.json --admin Jenny
+```
+
+Paste the printed JSON into the `DASHBOARD_LOGINS` environment variable. `logins.local.json` is gitignored. The script prints hashes, not the codes.
+
+Login records look like:
+
+```json
+{
+  "Jenny": { "role": "admin", "codeHash": "scrypt$…" },
+  "Ada": { "role": "rep", "rep": "Ada Example", "codeHash": "scrypt$…" }
+}
+```
+
+`rep` is the Designer value from the sheet, matched across both companies. The dropdown label is the object key.
+
+Codes are checked with scrypt on the server. The session is an httpOnly signed cookie (`SESSION_SECRET`). Eight failed attempts from one address lock that address for 15 minutes.
+
+## Sales files
+
+`swt_jobs.json` and `ssg_jobs.json`:
+
+```json
+{
+  "generated_at": "2026-01-01T00:00:00Z",
+  "jobs": [{
+    "company": "SWT",
+    "rep": "Ada Example",
+    "date_sold": "2026-01-15",
+    "month": "2026-01",
+    "quote_no": "WT-100",
+    "job_name": "Sample Shop",
+    "state": "CO",
+    "location": "CO - Denver",
+    "job_type": "Residential",
+    "amount": 10,
+    "amount_pre_fee": 10,
+    "is_change_order": false,
+    "status": "",
+    "tab": "2026",
+    "row": 2
+  }]
+}
+```
+
+`reps.json`:
+
+```json
+{
+  "generated_at": "2026-01-01T00:00:00Z",
+  "reps": [{
+    "company": "SWT",
+    "rep": "Ada Example",
+    "active": true,
+    "jobs_2025": 0,
+    "sales_2025": 0,
+    "jobs_2026_ytd": 1,
+    "sales_2026_ytd": 10
+  }]
+}
+```
+
+`amount` and `amount_pre_fee` are the same pre-fee job total. Fees are already excluded. Extra fields are ignored.
+
+The sheet **tab** is the year (`2025` or `2026`). **Month Sold** (`month`, `YYYY-MM`) is the month. Do not group by the calendar year of `date_sold`. A later-year tab includes prior-year cancellation credits, and those credits belong to that tab.
+
+Company totals on the admin view add every row on the tab, including inactive reps and `HOO`.
+
+## Upload
+
+The hourly job should send all three files on every run. The handler replaces the stored snapshot in one write. A rejected upload leaves the previous snapshot in place. Sending the same three files again is safe.
+
+`POST /api/ingest/data`
+
+```http
+Authorization: Bearer <DATA_INGEST_TOKEN>
+Content-Type: application/json
+```
+
+```json
+{ "swt_jobs": { "generated_at": "…", "jobs": [] }, "ssg_jobs": { "generated_at": "…", "jobs": [] }, "reps": { "generated_at": "…", "reps": [] } }
+```
+
+All three keys are required. `200` returns `{ "ok": true, "replaced_at": "…", "counts": { "swt": 0, "ssg": 0, "reps": 0 } }`. `400` means nothing was saved. A missing token is `503`. A wrong token is `401`.
+
+```bash
+DATA_INGEST_URL=https://<preview-host> DATA_INGEST_TOKEN=... node scripts/push-data.mjs /path/to/folder
+```
+
+The folder contains `swt_jobs.json`, `ssg_jobs.json`, and `reps.json`. The script posts to `/api/ingest/data`. Keep the JSON under about 4 MB.
+
+Commission, when a later job has it, is a separate store:
+
+`POST /api/ingest/commission` with `Authorization: Bearer <COMMISSION_INGEST_TOKEN>` and any JSON object. The dashboard does not read it. The page shows “Commission coming soon”.
+
+## Storage and Vercel
+
+Sales and commission each live in one private Vercel Blob object (`BLOB_READ_WRITE_TOKEN`). Readers see the previous full snapshot or the new one, not a half-written company.
+
+Set these names on the **Preview** environment. Do not redeploy production from this branch. Production on `main` is still the previous demo until this branch is approved.
+
+| Name | Purpose |
 | --- | --- |
-| Charged at or above list | rate × charged |
-| Undersold by less than 10% | rate × list − 0.5 × (list − charged) |
-| Charged at or under 90% of list | $0 |
-| No list price | rate × charged, marked list not verified |
+| `BLOB_READ_WRITE_TOKEN` | Private Blob store connection |
+| `DASHBOARD_LOGINS` | Hashed sign-in records from `scripts/hash-logins.mjs` |
+| `SESSION_SECRET` | Signs the session cookie |
+| `DATA_INGEST_TOKEN` | Bearer token for the hourly sales upload |
+| `COMMISSION_INGEST_TOKEN` | Bearer token for the future commission upload |
+| `DASHBOARD_EXCLUDE_REPS` | Optional extra non-person codes, comma-separated |
 
-Commission is clamped at $0. Jobs at or under 90% of list are counted on the **Below 10% floor** card. This demo has no manager-approval overrides.
+In the Vercel dashboard, create a **private** Blob store and connect it to this project so `BLOB_READ_WRITE_TOKEN` is created. Add the other values as secrets. `DATA_STORE=memory` is for local tests only.
 
-Example: list $1,000 at 5% → sold $1,100 is **$55**, sold $950 is **$25**, sold $900 is **$0**.
-
-## Project layout
-
-| Path | Role |
-| --- | --- |
-| `src/index.html` | Page, styles, and charts |
-| `src/commission.js` | Commission rule |
-| `src/compare.js` | Period comparison |
-| `data/nick_dashboard.json` | Snapshot the page reads |
-| `scripts/build.mjs` | Writes the static site into `public/` |
-| `test/` | Commission unit tests and a build check |
-| `vercel.json` | Vercel build and output settings |
-
-`public/` is generated. Chart.js loads from the jsDelivr CDN at runtime.
+The build does not need those variables. Sign-in and upload return 503 until they are set.
 
 ## Local
 
@@ -48,42 +144,12 @@ npm test
 npm start
 ```
 
-`npm start` runs the tests, builds `public/`, and serves http://localhost:4173. `npm test` also checks that the build output includes `index.html`, `commission.js`, and `data.json`.
+`npm start` runs the tests, writes `public/`, and serves the site and API at http://localhost:4173. Point `DATA_STORE=memory` plus the auth and ingest variables at the dev server when you want to sign in locally. Do not commit the files you upload.
 
-## Deploy on Vercel
-
-`vercel.json` sets the framework to Other, the build command to `npm run build`, and the output directory to `public`. No environment variables are required.
-
-1. Import this Git repository in the Vercel dashboard.
-2. Keep the production branch as `main`. Vercel reads the build settings from `vercel.json`.
-3. Deploy. The build runs the commission tests, then publishes `public/index.html`, `public/commission.js`, and `public/data.json`.
-
-Pushes to other branches get preview deployments with the same build.
-
-## Refresh the data
-
-Replace `data/nick_dashboard.json` with a new snapshot in the same shape:
-
-- `asOf` and `timezone`
-- `rep.displayName` of `Nick` and `rep.rate` of `0.07` (the build rejects any other presentation identity)
-- `kpis`, `months`, `jobs`, and `meta`
-- Optional rollups: `byState`, `byJobType`, `byFilmType`
-
-Each job needs `charged` and `listPrice` (`null` when the list was not verified). Recompute commission, the monthly rollups, and the KPIs from those prices:
+To check a real upload folder without committing it:
 
 ```bash
-node scripts/recompute.mjs
-npm test
+SGC_DATA_DIR=/path/to/folder npm test
 ```
 
-`src/commission.js` is the rule. The unit tests recompute every job and fail if the snapshot drifts from it.
-
-The sales-rep identity in this repository stays **Nick**. Customer names on the jobs are part of the snapshot.
-
-After updating the file:
-
-```bash
-npm test
-```
-
-Commit `data/nick_dashboard.json`. The next Vercel deployment publishes it as `data.json`.
+That test is skipped when `SGC_DATA_DIR` is unset.

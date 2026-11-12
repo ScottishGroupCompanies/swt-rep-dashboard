@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nick · Commission Dashboard — Scottish Group Companies</title>
+  <meta name="robots" content="noindex" />
+  <title>Rep Dashboard — Scottish Group Companies</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,17 +13,12 @@
   <style>
     :root {
       --navy: #1B2A4A;
-      --navy-2: #2C3D64;
       --ink: #1B2A4A;
       --muted: #5c6b82;
       --line: #d5dbe6;
       --bg: #f5f6f8;
       --card: #ffffff;
-      --accent: #1B2A4A;
-      --accent-2: #4E628A;
       --chart-2: #4E628A;
-      --chart-3: #8B98B3;
-      --chart-4: #C5CEDD;
       --ok: #15803d;
       --warn: #b45309;
       --danger: #b91c1c;
@@ -30,12 +26,10 @@
       --radius: 16px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
-      font-family: "DM Sans", system-ui, sans-serif; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: "DM Sans", system-ui, sans-serif; }
     body.locked { overflow: hidden; }
     .gate {
-      position: fixed; inset: 0; z-index: 50;
-      display: grid; place-items: center;
+      position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
       background:
         radial-gradient(900px 480px at 12% 0%, rgba(255,255,255,.08), transparent 55%),
         linear-gradient(165deg, #121c33, #1B2A4A 58%, #243656);
@@ -45,161 +39,93 @@
     .gate-card {
       width: min(420px, 92vw); padding: 36px 32px 28px;
       background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
-      border-radius: 22px; backdrop-filter: blur(10px);
-      box-shadow: 0 20px 60px rgba(0,0,0,.35); text-align: center;
+      border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.35); text-align: center;
     }
     .brand-logo { height: 52px; width: auto; max-width: 100%; color: var(--navy); display: block; }
     .gate .brand-logo { height: 64px; margin: 0 auto 18px; color: #fff; }
     .brand-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; min-width: 0; }
-    .gate h1 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
-      font-size: 2rem; margin: 0 0 6px; }
-    .gate p { color: rgba(255,255,255,.72); margin: 0 0 22px; font-size: .95rem; }
-    .pin-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
-    .pin-row input {
-      width: 52px; height: 60px; text-align: center; font-size: 1.6rem; font-weight: 600;
-      border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
-      background: rgba(0,0,0,.25); color: #fff; outline: none;
+    .gate h1 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 2rem; margin: 0 0 6px; }
+    .gate p { color: rgba(255,255,255,.72); margin: 0 0 18px; font-size: .95rem; }
+    .field { text-align: left; margin-bottom: 12px; }
+    .field span { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 6px; color: rgba(255,255,255,.8); }
+    .field select, .field input {
+      width: 100%; padding: 12px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
+      background: rgba(0,0,0,.25); color: #fff; font: inherit;
     }
-    .pin-row input:focus { border-color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
+    .field select option { color: #1B2A4A; }
     .gate button {
       width: 100%; margin-top: 8px; padding: 14px 16px; border: 0; border-radius: 12px;
-      background: #fff; color: var(--navy);
-      font-weight: 600; font-size: 1rem; cursor: pointer;
+      background: #fff; color: var(--navy); font-weight: 600; font-size: 1rem; cursor: pointer;
     }
     .gate-error { color: #fecaca; min-height: 1.2em; font-size: .85rem; margin-top: 10px; }
-    .gate-note { margin-top: 18px; font-size: .75rem; color: rgba(255,255,255,.45); }
-
     .app { display: none; max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
     .app.visible { display: block; }
-    .demo-banner {
-      background: var(--navy); color: #fff; font-weight: 700; letter-spacing: .04em;
-      text-align: center; padding: 12px 16px; margin: -28px -20px 18px;
-    }
-    .back-link {
-      border: 0; background: transparent; color: var(--navy); font: inherit; font-weight: 700;
-      cursor: pointer; padding: 0 0 12px; text-decoration: underline;
-    }
-    .team-table tr { cursor: pointer; }
-    .rep-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
-    .rep-picker label {
-      border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: .82rem; font-weight: 600;
-    }
-    header.top {
-      display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
-      justify-content: space-between; margin-bottom: 22px;
-    }
-    .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem;
-      color: var(--accent); font-weight: 700; margin: 0 0 6px; }
-    h1.page-title { font-family: "Instrument Serif", Georgia, serif; font-weight: 400;
-      font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0; color: var(--navy); }
+    header.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
+    h1.page-title { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0; color: var(--navy); }
     .sub { color: var(--muted); margin: 6px 0 0; font-size: .95rem; }
-    .filters {
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-      padding: 10px 12px; box-shadow: var(--shadow);
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .switch { display: flex; flex-wrap: wrap; gap: 8px; }
+    .switch button, .filters button, .back-link {
+      border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 999px;
+      padding: 8px 12px; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer;
     }
-    .filters label { font-size: .78rem; color: var(--muted); font-weight: 600; }
-    .filters select, .filters input {
-      border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
-      font: inherit; background: #fff; min-width: 140px;
-    }
-    .kpi-grid {
-      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin: 18px 0 20px;
-    }
-    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
-    @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-    .kpi {
-      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 16px 16px 14px; box-shadow: var(--shadow); min-height: 96px;
-    }
+    .switch button.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .filters select { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; background: #fff; }
+    .filters label { font-size: .78rem; color: var(--muted); font-weight: 600; display: flex; gap: 8px; align-items: center; }
+    .back-link { margin: 0 0 12px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; }
+    @media (max-width: 800px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); min-width: 0; }
     .kpi .label { font-size: .75rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
-    .kpi .value { font-size: 1.35rem; font-weight: 700; color: var(--navy); letter-spacing: -.02em; }
+    .kpi .value { font-size: 1.35rem; font-weight: 700; color: var(--navy); letter-spacing: -.02em; overflow-wrap: anywhere; }
     .kpi .hint { font-size: .72rem; color: var(--muted); margin-top: 6px; }
-    .kpi.accent { background: var(--navy); color: #fff; border: 0; }
-    .kpi.accent .label, .kpi.accent .hint { color: rgba(255,255,255,.7); }
+    .kpi.accent { background: var(--navy); border: 0; }
+    .kpi.accent .label, .kpi.accent .hint { color: rgba(255,255,255,.72); }
     .kpi.accent .value { color: #fff; }
-    .kpi.floor { border-color: #f3d3a1; }
-    .kpi.floor .value { color: var(--warn); }
-
-    .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-    @media (max-width: 960px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
-    .card {
-      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 18px; box-shadow: var(--shadow);
-    }
+    .grid-2 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 960px) { .grid-2 { grid-template-columns: minmax(0, 1fr); } }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 14px; min-width: 0; }
     .card h2 { margin: 0 0 4px; font-size: 1.05rem; color: var(--navy); }
     .card .caption { color: var(--muted); font-size: .82rem; margin: 0 0 14px; }
-    .chart-wrap { position: relative; height: 280px; }
-    .chart-wrap.sm { height: 240px; }
-
-    table.jobs { width: 100%; border-collapse: collapse; font-size: .86rem; }
-    table.jobs th, table.jobs td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
-    table.jobs th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
-    table.jobs tr:hover td { background: #f8fbff; }
-    .pill {
-      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600;
-      background: #eef2f7; color: var(--navy);
-    }
+    .chart-wrap { position: relative; height: 280px; min-width: 0; }
+    .chart-wrap canvas { max-width: 100%; }
+    table.jobs, table.compare-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    table.jobs th, table.jobs td, table.compare-table th, table.compare-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    table.compare-table th, table.compare-table td { text-align: right; }
+    table.compare-table th:first-child, table.compare-table td:first-child { text-align: left; }
+    table.jobs th, table.compare-table th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+    .scroll { overflow-x: auto; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; background: #eef2f7; color: var(--navy); }
     .pill.warn { background: #fff7ed; color: var(--warn); }
-    .pill.ok { background: #ecfdf5; color: var(--ok); }
     .pill.muted { background: #f1f5f9; color: var(--muted); }
     .pill.danger { background: #fef2f2; color: var(--danger); }
-    footer.site {
-      margin-top: 28px; color: var(--muted); font-size: .78rem; line-height: 1.5;
-      border-top: 1px solid var(--line); padding-top: 16px;
-    }
+    .name-button { border: 0; background: transparent; color: var(--navy); font: inherit; font-weight: 700; cursor: pointer; padding: 0; text-align: left; }
     .state-bars { display: flex; flex-direction: column; gap: 8px; }
-    .state-row { display: grid; grid-template-columns: 64px 1fr 72px; gap: 8px; align-items: center; font-size: .82rem; }
+    .state-row { display: grid; grid-template-columns: minmax(0, 110px) minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: .82rem; }
     .state-row .bar { height: 10px; background: #e8eef5; border-radius: 999px; overflow: hidden; }
     .state-row .fill { height: 100%; background: var(--navy); border-radius: 999px; }
     .money { font-variant-numeric: tabular-nums; }
-
-    .compare { margin-bottom: 14px; }
-    .compare-toolbar {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;
-    }
-    .compare-toolbar button {
-      border: 1px solid var(--line); background: #fff; color: var(--navy);
-      border-radius: 999px; padding: 8px 12px; font: inherit; font-size: .82rem;
-      font-weight: 600; cursor: pointer;
-    }
-    .compare-toolbar button.active { background: var(--navy); color: #fff; border-color: var(--navy); }
-    .compare-ranges { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    @media (max-width: 800px) { .compare-ranges { grid-template-columns: 1fr; } }
-    .period {
-      border: 1px solid var(--line); border-radius: 14px; padding: 12px;
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: end;
-    }
+    .delta.up { color: var(--ok); font-weight: 700; }
+    .delta.down { color: var(--danger); font-weight: 700; }
+    .rep-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+    .rep-picker label { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: .82rem; font-weight: 600; }
+    .compare-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .compare-ranges { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+    @media (max-width: 800px) { .compare-ranges { grid-template-columns: minmax(0, 1fr); } }
+    .period { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; }
     .period.a { box-shadow: inset 3px 0 0 var(--navy); }
     .period.b { box-shadow: inset 3px 0 0 var(--chart-2); }
-    .period strong { flex: 1 0 100%; font-size: .92rem; color: var(--navy); margin: 0; }
+    .period strong { flex: 1 0 100%; color: var(--navy); }
     .period label { font-size: .75rem; color: var(--muted); font-weight: 600; }
-    .period select {
-      display: block; margin-top: 4px; border: 1px solid var(--line); border-radius: 10px;
-      padding: 8px 10px; font: inherit; background: #fff; min-width: 130px;
-    }
-    table.compare-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
-    table.compare-table th, table.compare-table td {
-      text-align: right; padding: 8px 8px; border-bottom: 1px solid var(--line);
-    }
-    table.compare-table th:first-child, table.compare-table td:first-child { text-align: left; }
-    table.compare-table th {
-      color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
-    }
-    .delta.up { color: var(--ok); font-weight: 600; }
-    .delta.down { color: var(--danger); font-weight: 600; }
-    .compare-lower { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 14px; margin-top: 14px; }
-    .compare-lower > div { min-width: 0; }
-    @media (max-width: 960px) { .compare-lower { grid-template-columns: minmax(0, 1fr); } }
-    .compare-lower h3 { margin: 0 0 8px; font-size: .95rem; color: var(--navy); }
+    .period select { display: block; margin-top: 4px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; background: #fff; }
+    footer.site { margin-top: 8px; color: var(--muted); font-size: .78rem; line-height: 1.5; border-top: 1px solid var(--line); padding-top: 16px; }
+    .notice { background: #f8fafc; border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px; color: var(--muted); font-size: .88rem; }
   </style>
 </head>
 <body class="locked">
   <div class="gate" id="gate">
-    <div class="gate-card">
+    <form class="gate-card" id="signIn">
       <svg class="brand-logo" viewBox="0 0 268 56" role="img" aria-label="Scottish Group Companies">
         <rect width="56" height="56" rx="4" fill="#ffffff"/>
         <g fill="#1B2A4A">
@@ -212,63 +138,15 @@
         <text x="72" y="46" fill="currentColor" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="9" letter-spacing="2.6">GROUP COMPANIES</text>
       </svg>
       <h1>Rep Dashboard</h1>
-      <p>Scottish Window Tinting · Sales performance</p>
-      <div class="pin-row" id="pinRow">
-        <input inputmode="numeric" maxlength="1" aria-label="Digit 1" />
-        <input inputmode="numeric" maxlength="1" aria-label="Digit 2" />
-        <input inputmode="numeric" maxlength="1" aria-label="Digit 3" />
-        <input inputmode="numeric" maxlength="1" aria-label="Digit 4" />
-      </div>
-      <button type="button" id="unlockBtn">Unlock dashboard</button>
-      <div class="gate-error" id="gateError"></div>
-      <div class="gate-note">Demo access gate — client-side only, not real security.</div>
-    </div>
+      <p>Scottish Window Tinting and Scottish Stained Glass</p>
+      <label class="field"><span>Name</span><select id="name" name="name" required><option value="">Loading names…</option></select></label>
+      <label class="field"><span>Code</span><input id="code" name="code" type="password" autocomplete="current-password" required /></label>
+      <button type="submit" id="signInBtn">Sign in</button>
+      <div class="gate-error" id="gateError" role="alert"></div>
+    </form>
   </div>
 
   <main class="app" id="app">
-    <div id="demoBanner" class="demo-banner" hidden>Demo data. Dollar amounts and commission rates are simulated. Job and client names are from 2026.</div>
-    <button type="button" id="backToAdmin" class="back-link" hidden>All reps</button>
-    <section id="adminHome" hidden>
-      <header class="top">
-        <div class="brand-row">
-          <svg class="brand-logo" viewBox="0 0 268 56" role="img" aria-label="Scottish Group Companies">
-            <rect width="56" height="56" rx="4" fill="#ffffff"/>
-            <g fill="#1B2A4A">
-              <rect x="4" y="4" width="22" height="22"/>
-              <rect x="30" y="4" width="22" height="22"/>
-              <rect x="4" y="30" width="22" height="22"/>
-              <rect x="30" y="30" width="22" height="22"/>
-            </g>
-            <text x="72" y="28" fill="currentColor" font-family="Instrument Serif, Georgia, serif" font-size="26">SCOTTISH</text>
-            <text x="72" y="46" fill="currentColor" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="9" letter-spacing="2.6">GROUP COMPANIES</text>
-          </svg>
-          <div>
-            <h1 class="page-title">Scottish Window Tinting</h1>
-            <p class="sub">Admin · SWT sales team · demo dollars</p>
-          </div>
-        </div>
-      </header>
-      <section class="kpi-grid" id="companyKpis"></section>
-      <section class="card" style="margin-bottom:14px">
-        <h2>Team</h2>
-        <p class="caption">Click a rep for their dashboard. Rates are simulated.</p>
-        <div style="overflow-x:auto">
-          <table class="jobs team-table">
-            <thead>
-              <tr><th>Rep</th><th>Demo rate</th><th>Sales</th><th>Commission</th><th>Jobs</th><th>Avg job</th><th>Below floor</th></tr>
-            </thead>
-            <tbody id="teamBody"></tbody>
-          </table>
-        </div>
-      </section>
-      <section class="card" style="margin-bottom:14px">
-        <h2>Compare reps</h2>
-        <p class="caption">Pick two or more reps. Figures use the same simulated dollars.</p>
-        <div class="rep-picker" id="repPicker"></div>
-        <div id="repCompareOut"></div>
-        <div class="chart-wrap" id="repCompareWrap" hidden><canvas id="repCompareChart"></canvas></div>
-      </section>
-    </section>
     <header class="top">
       <div class="brand-row">
         <svg class="brand-logo" viewBox="0 0 268 56" role="img" aria-label="Scottish Group Companies">
@@ -283,812 +161,20 @@
           <text x="72" y="46" fill="currentColor" font-family="DM Sans, Helvetica, Arial, sans-serif" font-size="9" letter-spacing="2.6">GROUP COMPANIES</text>
         </svg>
         <div>
-          <h1 class="page-title" id="pageTitle">Nick · Commission Dashboard</h1>
-          <p class="sub" id="pageSub">Scottish Window Tinting · 7% commission · as of <span id="asOf"></span></p>
+          <h1 class="page-title" id="pageTitle">Sales</h1>
+          <p class="sub" id="pageSub"></p>
         </div>
       </div>
       <div class="filters">
-        <div>
-          <label for="monthFilter">Month</label><br/>
-          <select id="monthFilter"><option value="all">All months</option></select>
-        </div>
-        <div>
-          <label for="typeFilter">Job type</label><br/>
-          <select id="typeFilter"><option value="all">All types</option></select>
-        </div>
-        <div>
-          <label for="stateFilter">State</label><br/>
-          <select id="stateFilter"><option value="all">All states</option></select>
-        </div>
+        <div class="switch" id="companySwitch" role="group" aria-label="Company"></div>
+        <label>Sheet year <select id="yearSelect"></select></label>
+        <button type="button" id="signOut">Sign out</button>
       </div>
     </header>
-
-    <section class="kpi-grid" id="kpis"></section>
-
-    <section class="grid-2">
-      <div class="card">
-        <h2>Monthly sales &amp; commission</h2>
-        <p class="caption">Sales · month-over-month change on hover</p>
-        <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h2>YTD cumulative</h2>
-        <p class="caption">Running total of sales</p>
-        <div class="chart-wrap"><canvas id="cumChart"></canvas></div>
-      </div>
-    </section>
-
-    <section class="grid-3">
-      <div class="card">
-        <h2>By state / market</h2>
-        <p class="caption">Jobs and sales by location</p>
-        <div class="state-bars" id="stateBars"></div>
-      </div>
-      <div class="card">
-        <h2>Residential vs commercial</h2>
-        <p class="caption">Job Type split</p>
-        <div class="chart-wrap sm"><canvas id="typeChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h2>Film type mix</h2>
-        <p class="caption">From sheet Film Type</p>
-        <div class="chart-wrap sm"><canvas id="filmChart"></canvas></div>
-      </div>
-    </section>
-
-    <section class="card compare" id="compare">
-      <h2>Compare</h2>
-      <p class="caption">Pick two month ranges or quarters. Change is the later period minus the earlier period, as a percent of the earlier period.</p>
-      <div class="compare-toolbar">
-        <button type="button" id="presetMonth">This month vs last month</button>
-        <button type="button" id="presetQuarter">This quarter vs last quarter</button>
-        <button type="button" id="presetYear" hidden>This year vs last year</button>
-      </div>
-      <div class="compare-ranges">
-        <div class="period a">
-          <strong>Period A</strong>
-          <label>From<select id="aStart"></select></label>
-          <label>To<select id="aEnd"></select></label>
-          <label>Quarter<select id="aQuarter"></select></label>
-        </div>
-        <div class="period b">
-          <strong>Period B</strong>
-          <label>From<select id="bStart"></select></label>
-          <label>To<select id="bEnd"></select></label>
-          <label>Quarter<select id="bQuarter"></select></label>
-        </div>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="compare-table">
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th id="compareHeadEarlier">Earlier</th>
-              <th id="compareHeadLater">Later</th>
-              <th id="compareHeadChange">Change</th>
-              <th>%</th>
-            </tr>
-          </thead>
-          <tbody id="compareBody"></tbody>
-        </table>
-      </div>
-      <div class="compare-lower">
-        <div>
-          <h3>Sales and commission</h3>
-          <p class="caption">Grouped bars on one dollar scale</p>
-          <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
-        </div>
-        <div>
-          <h3>Residential vs commercial</h3>
-          <div style="overflow-x:auto">
-            <table class="compare-table">
-              <thead>
-                <tr><th>Type</th><th id="compareTypeEarlier">Earlier</th><th id="compareTypeLater">Later</th><th id="compareTypeChange">Change</th><th>%</th></tr>
-              </thead>
-              <tbody id="compareTypes"></tbody>
-            </table>
-          </div>
-          <h3 style="margin-top:16px">Top states</h3>
-          <div style="overflow-x:auto">
-            <table class="compare-table">
-              <thead>
-                <tr><th>State</th><th id="compareStateEarlier">Earlier</th><th id="compareStateLater">Later</th><th id="compareStateChange">Change</th><th>%</th></tr>
-              </thead>
-              <tbody id="compareStates"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Recent jobs</h2>
-      <p class="caption" id="jobsCaption">Filtered jobs</p>
-      <div style="overflow-x:auto">
-        <table class="jobs">
-          <thead>
-            <tr>
-              <th>Date</th><th>ZOHO #</th><th>Client</th><th>Type</th><th>Location</th>
-              <th>Charged</th><th>Commission</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="jobsBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <footer class="site">
-      <div><strong>Commission rule</strong> (pre-fee): at/over list → rate × charged; undersold by less than 10% → rate × list − 0.5 × shortfall; at or under 90% of list → $0; no list → rate × charged (list not verified).</div>
-      <div id="metaNote" style="margin-top:6px"></div>
-    </footer>
+    <button type="button" id="back" class="back-link" hidden>All reps</button>
+    <div id="dash"></div>
+    <footer class="site">Scottish Group Companies. Sales are pre-fee job totals. The year is the sheet tab. The month is Month Sold.</footer>
   </main>
-
-  <script type="module">
-    import { computeCommission } from "./commission.js";
-    import { buildDemo, monthLabel, repDashboard } from "./admin-data.js";
-    import {
-      comparePeriods,
-      listQuarters,
-      presets,
-      orientPeriods,
-      periodChange,
-      topStates,
-      typeRows,
-    } from "./compare.js";
-
-    const REP_CODE = "1234";
-    const ADMIN_CODE = "0000";
-    const money = (n) => n == null || Number.isNaN(n) ? "—" :
-      "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    const money2 = (n) => n == null || Number.isNaN(n) ? "—" :
-      "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    // Gate
-    const inputs = [...document.querySelectorAll("#pinRow input")];
-    const gateError = document.getElementById("gateError");
-    inputs.forEach((inp, i) => {
-      inp.addEventListener("input", () => {
-        inp.value = inp.value.replace(/\D/g, "").slice(0, 1);
-        if (inp.value && i < inputs.length - 1) inputs[i + 1].focus();
-        if (inputs.every((x) => x.value)) tryUnlock();
-      });
-      inp.addEventListener("keydown", (e) => {
-        if (e.key === "Backspace" && !inp.value && i > 0) inputs[i - 1].focus();
-        if (e.key === "Enter") tryUnlock();
-      });
-    });
-    document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
-    function tryUnlock() {
-      const code = inputs.map((i) => i.value).join("");
-      if (code === ADMIN_CODE) {
-        unlockShell();
-        bootAdmin();
-        return;
-      }
-      if (code !== REP_CODE) {
-        gateError.textContent = "Incorrect code. Try again.";
-        inputs.forEach((i) => (i.value = ""));
-        inputs[0].focus();
-        return;
-      }
-      unlockShell();
-      bootNick();
-    }
-    function unlockShell() {
-      document.getElementById("gate").classList.add("hidden");
-      document.body.classList.remove("locked");
-      document.getElementById("app").classList.add("visible");
-    }
-
-    let DATA = null;
-    let COMPARE_JOBS = null;
-    let charts = {};
-    let DEMO = null;
-    let filtersBound = false;
-
-    async function bootNick() {
-      const res = await fetch("./data.json");
-      COMPARE_JOBS = null;
-      document.getElementById("demoBanner").hidden = true;
-      document.getElementById("backToAdmin").hidden = true;
-      document.getElementById("adminHome").hidden = true;
-      document.getElementById("presetYear").hidden = true;
-      showRep(await res.json());
-    }
-
-    async function bootAdmin() {
-      const res = await fetch("./admin-jobs.json");
-      DEMO = buildDemo(await res.json());
-      document.getElementById("demoBanner").hidden = false;
-      document.getElementById("presetYear").hidden = false;
-      showCompany();
-    }
-
-    function showCompany() {
-      const jobs = DEMO.jobs2026;
-      const latest = [...new Set(jobs.map((job) => job.monthKey))].sort().at(-1);
-      const thisMonthJobs = jobs.filter((job) => job.monthKey === latest);
-      COMPARE_JOBS = [...DEMO.jobs2026, ...DEMO.jobs2025];
-      document.getElementById("adminHome").hidden = false;
-      document.getElementById("backToAdmin").hidden = true;
-      paintTeam();
-      showRep({
-        asOf: "Demo snapshot",
-        rep: { displayName: "Scottish Window Tinting", rate: 0, rateLabel: "mixed demo rates" },
-        kpis: {
-          ytdSales: DEMO.sales,
-          ytdCommission: DEMO.commission,
-          thisMonthSales: thisMonthJobs.reduce((sum, job) => sum + job.charged, 0),
-          thisMonthCommission: thisMonthJobs.reduce((sum, job) => sum + (job.commission || 0), 0),
-          thisMonthLabel: latest ? monthLabel(latest) : "",
-          jobCount: jobs.length,
-          avgJobSize: jobs.length ? DEMO.sales / jobs.length : 0,
-          expectedPayrollCommission: thisMonthJobs.reduce((sum, job) => sum + (job.commission || 0), 0),
-          listVerifiedCount: jobs.filter((job) => job.listVerified).length,
-          listNotVerifiedCount: jobs.filter((job) => !job.listVerified).length,
-          belowFloorCount: jobs.filter((job) => job.status === "below_floor").length,
-        },
-        months: [...new Set(jobs.map((job) => job.monthKey))].sort().map((key) => ({ key, label: monthLabel(key) })),
-        jobs,
-        meta: { note: "Demo data. Dollar amounts and commission rates are simulated. Job and client names are from 2026." },
-      }, { keepAdmin: true });
-    }
-
-    function showRep(data, options = {}) {
-      DATA = data;
-      document.getElementById("pageTitle").textContent = `${data.rep.displayName} · Commission Dashboard`;
-      document.getElementById("pageSub").innerHTML = `Scottish Window Tinting · ${data.rep.rateLabel} · as of <span id="asOf">${data.asOf}</span>`;
-      document.getElementById("metaNote").textContent = data.meta.note;
-      if (!options.keepAdmin) document.getElementById("adminHome").hidden = true;
-      fillFilters();
-      initCompare();
-      render();
-    }
-
-    function paintTeam() {
-      const moneyCell = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      document.getElementById("companyKpis").innerHTML = [
-        { label: "Company sales YTD", value: moneyCell(DEMO.sales), hint: "2026 · simulated" },
-        { label: "Company commission", value: moneyCell(DEMO.commission), hint: "Simulated rates" },
-      ].map((card) => `<div class="kpi accent"><div class="label">${card.label}</div><div class="value money">${card.value}</div><div class="hint">${card.hint}</div></div>`).join("");
-      document.getElementById("teamBody").innerHTML = DEMO.reps.map((rep) => {
-        const below = rep.jobs.filter((job) => job.status === "below_floor").length;
-        const avg = rep.count ? rep.sales / rep.count : 0;
-        return `<tr data-rep="${rep.code}">
-          <td>${rep.name}</td><td>${rep.rateLabel}</td><td class="money">${moneyCell(rep.sales)}</td>
-          <td class="money">${moneyCell(rep.commission)}</td><td>${rep.count}</td>
-          <td class="money">${moneyCell(avg)}</td><td>${below}</td>
-        </tr>`;
-      }).join("");
-      document.getElementById("teamBody").querySelectorAll("tr").forEach((row) => {
-        row.addEventListener("click", () => {
-          const rep = DEMO.reps.find((item) => item.code === row.dataset.rep);
-          COMPARE_JOBS = [...rep.jobs, ...DEMO.jobs2025.filter((job) => job.designer === rep.code)];
-          document.getElementById("demoBanner").hidden = false;
-          document.getElementById("backToAdmin").hidden = false;
-          showRep(repDashboard(rep));
-        });
-      });
-      document.getElementById("repPicker").innerHTML = DEMO.reps.map((rep) =>
-        `<label><input type="checkbox" value="${rep.code}" /> ${rep.name}</label>`
-      ).join("");
-      document.getElementById("repPicker").querySelectorAll("input").forEach((input) => {
-        input.addEventListener("change", renderRepCompare);
-      });
-    }
-
-    document.getElementById("backToAdmin").addEventListener("click", () => {
-      document.getElementById("backToAdmin").hidden = true;
-      showCompany();
-    });
-
-    function renderRepCompare() {
-      const selected = [...document.querySelectorAll("#repPicker input:checked")].map((input) =>
-        DEMO.reps.find((rep) => rep.code === input.value)
-      );
-      const out = document.getElementById("repCompareOut");
-      const wrap = document.getElementById("repCompareWrap");
-      if (selected.length < 2) {
-        out.innerHTML = "<p class='caption'>Select at least two reps.</p>";
-        wrap.hidden = true;
-        destroy("reps");
-        return;
-      }
-      const metrics = [
-        ["Sales", (rep) => rep.sales],
-        ["Commission", (rep) => rep.commission],
-        ["Jobs", (rep) => rep.count],
-        ["Avg job", (rep) => (rep.count ? rep.sales / rep.count : 0)],
-        ["Below floor", (rep) => rep.jobs.filter((job) => job.status === "below_floor").length],
-      ];
-      const header = selected.map((rep) => `<th>${rep.name}</th>`).join("");
-      const body = metrics.map(([label, pick]) =>
-        `<tr><td>${label}</td>${selected.map((rep) => `<td class="money">${typeof pick(rep) === "number" && label !== "Jobs" && label !== "Below floor" ? "$" + pick(rep).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : pick(rep)}</td>`).join("")}</tr>`
-      ).join("");
-      const types = ["Residential", "Commercial"];
-      const typeRowsHtml = types.map((type) =>
-        `<tr><td>${type} sales</td>${selected.map((rep) => {
-          const sales = rep.jobs.filter((job) => job.jobType === type).reduce((sum, job) => sum + job.charged, 0);
-          return `<td class="money">$${sales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
-        }).join("")}</tr>`
-      ).join("");
-      const stateNames = [...new Set(selected.flatMap((rep) => rep.jobs.map((job) => job.state)))];
-      const ranked = stateNames.map((state) => ({
-        state,
-        total: selected.reduce((sum, rep) => sum + rep.jobs.filter((job) => job.state === state).reduce((inner, job) => inner + job.charged, 0), 0),
-      })).sort((a, b) => b.total - a.total).slice(0, 5);
-      const stateRows = ranked.map((row) =>
-        `<tr><td>${row.state}</td>${selected.map((rep) => {
-          const sales = rep.jobs.filter((job) => job.state === row.state).reduce((sum, job) => sum + job.charged, 0);
-          return `<td class="money">$${sales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
-        }).join("")}</tr>`
-      ).join("");
-      out.innerHTML = `<div style="overflow-x:auto"><table class="compare-table"><thead><tr><th>Metric</th>${header}</tr></thead><tbody>${body}${typeRowsHtml}</tbody></table>
-        <h3 style="margin-top:16px">Top states</h3>
-        <table class="compare-table"><thead><tr><th>State</th>${header}</tr></thead><tbody>${stateRows}</tbody></table></div>`;
-      wrap.hidden = false;
-      destroy("reps");
-      const colors = ["#1B2A4A", "#4E628A", "#8B98B3", "#2C3D64", "#C5CEDD", "#121c33"];
-      charts.reps = new Chart(document.getElementById("repCompareChart"), {
-        type: "bar",
-        data: {
-          labels: selected.map((rep) => rep.name),
-          datasets: [
-            { label: "Sales", data: selected.map((rep) => rep.sales), backgroundColor: colors[0], borderRadius: 6 },
-            { label: "Commission", data: selected.map((rep) => rep.commission), backgroundColor: colors[1], borderRadius: 6 },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } },
-          scales: { y: { ticks: { callback: (value) => "$" + Math.round(value / 1000) + "k" }, grid: { color: "#eef2f7" } } },
-        },
-      });
-    }
-
-    function fillFilters() {
-      const months = DATA.months;
-      const mf = document.getElementById("monthFilter");
-      mf.innerHTML = '<option value="all">All months</option>';
-      months.forEach((m) => {
-        const o = document.createElement("option");
-        o.value = m.key; o.textContent = m.label; mf.appendChild(o);
-      });
-      const types = [...new Set(DATA.jobs.map((j) => j.jobType))].sort();
-      const tf = document.getElementById("typeFilter");
-      tf.innerHTML = '<option value="all">All types</option>';
-      types.forEach((t) => {
-        const o = document.createElement("option");
-        o.value = t; o.textContent = t; tf.appendChild(o);
-      });
-      const states = [...new Set(DATA.jobs.map((j) => j.state))].sort();
-      const sf = document.getElementById("stateFilter");
-      sf.innerHTML = '<option value="all">All states</option>';
-      states.forEach((s) => {
-        const o = document.createElement("option");
-        o.value = s; o.textContent = s; sf.appendChild(o);
-      });
-      if (!filtersBound) {
-        ["monthFilter", "typeFilter", "stateFilter"].forEach((id) =>
-          document.getElementById(id).addEventListener("change", render)
-        );
-        filtersBound = true;
-      }
-    }
-
-    function filteredJobs() {
-      const month = document.getElementById("monthFilter").value;
-      const type = document.getElementById("typeFilter").value;
-      const state = document.getElementById("stateFilter").value;
-      return DATA.jobs.filter((j) => {
-        if (month !== "all" && j.monthKey !== month) return false;
-        if (type !== "all" && j.jobType !== type) return false;
-        if (state !== "all" && j.state !== state) return false;
-        return true;
-      });
-    }
-
-    function aggregate(jobs) {
-      const sales = jobs.reduce((a, j) => a + j.charged, 0);
-      const commission = jobs.reduce((a, j) => a + (j.commission || 0), 0);
-      const byMonth = {};
-      DATA.months.forEach((m) => { byMonth[m.key] = { sales: 0, commission: 0, jobs: 0, label: m.label }; });
-      jobs.forEach((j) => {
-        if (!j.monthKey || !byMonth[j.monthKey]) return;
-        byMonth[j.monthKey].sales += j.charged;
-        byMonth[j.monthKey].commission += j.commission || 0;
-        byMonth[j.monthKey].jobs += 1;
-      });
-      const months = Object.keys(byMonth).sort().map((k) => {
-        const m = byMonth[k];
-        return { key: k, label: m.label, sales: m.sales, commission: m.commission, jobs: m.jobs };
-      });
-      let cumS = 0, cumC = 0;
-      months.forEach((m) => { cumS += m.sales; cumC += m.commission; m.cumSales = cumS; m.cumCommission = cumC; });
-      const byState = {};
-      jobs.forEach((j) => {
-        const s = j.state || "Unknown";
-        byState[s] = byState[s] || { state: s, sales: 0, jobs: 0 };
-        byState[s].sales += j.charged; byState[s].jobs += 1;
-      });
-      const byType = {};
-      jobs.forEach((j) => {
-        byType[j.jobType] = byType[j.jobType] || { type: j.jobType, sales: 0, jobs: 0 };
-        byType[j.jobType].sales += j.charged; byType[j.jobType].jobs += 1;
-      });
-      const byFilm = {};
-      jobs.forEach((j) => {
-        byFilm[j.filmType] = byFilm[j.filmType] || { film: j.filmType, sales: 0, jobs: 0 };
-        byFilm[j.filmType].sales += j.charged; byFilm[j.filmType].jobs += 1;
-      });
-      return {
-        sales, commission, count: jobs.length,
-        avg: jobs.length ? sales / jobs.length : 0,
-        months,
-        states: Object.values(byState).sort((a, b) => b.sales - a.sales),
-        types: Object.values(byType).sort((a, b) => b.sales - a.sales),
-        films: Object.values(byFilm).sort((a, b) => b.sales - a.sales),
-      };
-    }
-
-    function render() {
-      const jobs = filteredJobs();
-      const agg = aggregate(jobs);
-      const k = DATA.kpis;
-      const allMode = document.getElementById("monthFilter").value === "all"
-        && document.getElementById("typeFilter").value === "all"
-        && document.getElementById("stateFilter").value === "all";
-
-      const floorCount = jobs.filter((j) => j.status === "below_floor").length;
-      const cards = [
-        { label: allMode ? "YTD sales" : "Filtered sales", value: money(agg.sales), hint: "Job Total excl. 4% fee", accent: true },
-        { label: allMode ? "YTD commission" : "Filtered commission", value: money2(agg.commission), hint: `${DATA.rep.displayName} · ${DATA.rep.rateLabel}` },
-        { label: "This month", value: money(k.thisMonthSales), hint: k.thisMonthLabel + " · " + money2(k.thisMonthCommission) + " comm." },
-        { label: "Jobs", value: String(agg.count), hint: allMode ? (k.listNotVerifiedCount + " list not verified") : "in current filter" },
-        { label: "Below 10% floor", value: String(floorCount), hint: "Charged ≤ 90% of list", floor: true },
-        { label: "Avg job size", value: money(agg.avg), hint: "Charged / jobs" },
-        { label: "Expected payroll", value: money2(k.expectedPayrollCommission), hint: "This month commission (proxy)" },
-      ];
-      document.getElementById("kpis").innerHTML = cards.map((c) =>
-        `<div class="kpi${c.accent ? " accent" : ""}${c.floor ? " floor" : ""}"><div class="label">${c.label}</div><div class="value money">${c.value}</div><div class="hint">${c.hint}</div></div>`
-      ).join("");
-
-      renderMonthly(agg.months);
-      renderCum(agg.months);
-      renderStates(agg.states);
-      renderType(agg.types);
-      renderFilm(agg.films);
-      renderTable(jobs);
-    }
-
-    function destroy(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
-
-    function renderMonthly(months) {
-      destroy("monthly");
-      const labels = months.map((m) => m.label);
-      charts.monthly = new Chart(document.getElementById("monthlyChart"), {
-        data: {
-          labels,
-          datasets: [
-            { type: "bar", label: "Sales", data: months.map((m) => m.sales),
-              backgroundColor: "rgba(27,42,74,.9)", borderRadius: 6 },
-          ],
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                footer(items) {
-                  const i = items[0]?.dataIndex ?? 0;
-                  if (i <= 0) return "MoM —";
-                  const prev = months[i - 1].sales;
-                  const cur = months[i].sales;
-                  if (!prev) return "MoM —";
-                  const pct = ((cur - prev) / prev) * 100;
-                  const sign = pct > 0 ? "+" : "";
-                  return "MoM " + sign + pct.toFixed(1) + "%";
-                },
-              },
-            },
-          },
-          scales: {
-            y: { ticks: { callback: (v) => "$" + (v/1000) + "k" }, grid: { color: "#eef2f7" } },
-          },
-        },
-      });
-    }
-
-    function renderCum(months) {
-      destroy("cum");
-      charts.cum = new Chart(document.getElementById("cumChart"), {
-        type: "line",
-        data: {
-          labels: months.map((m) => m.label),
-          datasets: [
-            { label: "Cumulative sales", data: months.map((m) => m.cumSales),
-              borderColor: "#1B2A4A", tension: .3, fill: false },
-          ],
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { ticks: { callback: (v) => "$" + (v/1000).toFixed(0) + "k" }, grid: { color: "#eef2f7" } } },
-        },
-      });
-    }
-
-    function renderStates(states) {
-      const max = Math.max(...states.map((s) => s.sales), 1);
-      document.getElementById("stateBars").innerHTML = states.slice(0, 8).map((s) =>
-        `<div class="state-row"><div>${s.state}</div><div class="bar"><div class="fill" style="width:${(s.sales/max*100).toFixed(1)}%"></div></div><div class="money">${money(s.sales)}</div></div>`
-      ).join("") || "<div class='caption'>No data</div>";
-    }
-
-    function renderType(types) {
-      destroy("type");
-      const colors = ["#1B2A4A", "#4E628A", "#8B98B3", "#2C3D64", "#C5CEDD"];
-      charts.type = new Chart(document.getElementById("typeChart"), {
-        type: "doughnut",
-        data: {
-          labels: types.map((t) => t.type),
-          datasets: [{ data: types.map((t) => t.sales), backgroundColor: colors.slice(0, types.length) }],
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
-      });
-    }
-
-    function renderFilm(films) {
-      destroy("film");
-      charts.film = new Chart(document.getElementById("filmChart"), {
-        type: "bar",
-        data: {
-          labels: films.slice(0, 6).map((f) => f.film),
-          datasets: [{ label: "Sales", data: films.slice(0, 6).map((f) => f.sales),
-            backgroundColor: "rgba(27,42,74,.82)", borderRadius: 6 }],
-        },
-        options: {
-          indexAxis: "y", responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { ticks: { callback: (v) => "$" + (v/1000) + "k" }, grid: { color: "#eef2f7" } } },
-        },
-      });
-    }
-
-    function statusPill(st) {
-      if (st === "below_floor") return '<span class="pill danger">below floor</span>';
-      if (st === "undersold") return '<span class="pill warn">undersold</span>';
-      if (st === "oversold") return '<span class="pill ok">oversold</span>';
-      if (st === "list_not_verified") return '<span class="pill muted">list n/v</span>';
-      if (st === "ok") return '<span class="pill ok">ok</span>';
-      return `<span class="pill">${st}</span>`;
-    }
-
-    function signedMoney(n) {
-      const sign = n > 0 ? "+" : n < 0 ? "−" : "";
-      return sign + "$" + Math.abs(Number(n)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    function signedCount(n) {
-      const sign = n > 0 ? "+" : n < 0 ? "−" : "";
-      return sign + String(Math.abs(n));
-    }
-    function fmtPct(pct) {
-      if (pct == null || Number.isNaN(pct)) return "—";
-      const sign = pct > 0 ? "+" : pct < 0 ? "−" : "";
-      return sign + Math.abs(pct).toFixed(1) + "%";
-    }
-    function deltaClass(n) {
-      if (n > 0) return "up";
-      if (n < 0) return "down";
-      return "";
-    }
-    function axisMoney(v) {
-      const abs = Math.abs(v);
-      if (abs >= 1000) return "$" + (v / 1000).toFixed(abs >= 10000 ? 0 : 1) + "k";
-      return "$" + Math.round(v);
-    }
-    function currentRanges() {
-      return {
-        a: { start: document.getElementById("aStart").value, end: document.getElementById("aEnd").value },
-        b: { start: document.getElementById("bStart").value, end: document.getElementById("bEnd").value },
-      };
-    }
-    function sameRange(left, right) {
-      if (!left || !right) return false;
-      return left.start === right.start && left.end === right.end;
-    }
-    function setActivePreset() {
-      const keys = compareMonthList().map((month) => month.key);
-      const preset = presets(keys);
-      const ranges = currentRanges();
-      document.getElementById("presetMonth").classList.toggle(
-        "active",
-        sameRange(ranges.a, preset.month?.a) && sameRange(ranges.b, preset.month?.b),
-      );
-      document.getElementById("presetQuarter").classList.toggle(
-        "active",
-        sameRange(ranges.a, preset.quarter?.a) && sameRange(ranges.b, preset.quarter?.b),
-      );
-    }
-    function syncQuarterSelect(side) {
-      const start = document.getElementById(side + "Start").value;
-      const end = document.getElementById(side + "End").value;
-      const select = document.getElementById(side + "Quarter");
-      const match = [...select.options].find((option) => option.dataset.start === start && option.dataset.end === end);
-      select.value = match ? match.value : "";
-    }
-    function applyRanges(rangeA, rangeB) {
-      document.getElementById("aStart").value = rangeA.start;
-      document.getElementById("aEnd").value = rangeA.end;
-      document.getElementById("bStart").value = rangeB.start;
-      document.getElementById("bEnd").value = rangeB.end;
-      syncQuarterSelect("a");
-      syncQuarterSelect("b");
-      setActivePreset();
-      renderCompare();
-    }
-    let compareBound = false;
-    function initCompare() {
-      const months = compareMonthList();
-      for (const id of ["aStart", "aEnd", "bStart", "bEnd"]) {
-        const select = document.getElementById(id);
-        select.innerHTML = "";
-        months.forEach((month) => {
-          const option = document.createElement("option");
-          option.value = month.key;
-          option.textContent = month.label;
-          select.appendChild(option);
-        });
-      }
-      for (const id of ["aQuarter", "bQuarter"]) {
-        const select = document.getElementById(id);
-        select.innerHTML = '<option value="">Custom range</option>';
-        for (const quarter of listQuarters(months.map((month) => month.key))) {
-          const option = document.createElement("option");
-          option.value = quarter.id;
-          option.textContent = `Q${quarter.quarter} ${quarter.year}`;
-          option.dataset.start = quarter.start;
-          option.dataset.end = quarter.end;
-          select.appendChild(option);
-        }
-      }
-      if (!compareBound) {
-        for (const id of ["aStart", "aEnd", "bStart", "bEnd"]) {
-          document.getElementById(id).addEventListener("change", () => {
-            syncQuarterSelect(id.startsWith("a") ? "a" : "b");
-            setActivePreset();
-            renderCompare();
-          });
-        }
-        for (const id of ["aQuarter", "bQuarter"]) {
-          document.getElementById(id).addEventListener("change", () => {
-            const select = document.getElementById(id);
-            if (!select.value) return;
-            const chosen = select.selectedOptions[0];
-            const side = id.startsWith("a") ? "a" : "b";
-            document.getElementById(side + "Start").value = chosen.dataset.start;
-            document.getElementById(side + "End").value = chosen.dataset.end;
-            setActivePreset();
-            renderCompare();
-          });
-        }
-        document.getElementById("presetMonth").addEventListener("click", () => {
-          const preset = presets(compareMonthList().map((month) => month.key));
-          applyRanges(preset.month.a, preset.month.b);
-        });
-        document.getElementById("presetQuarter").addEventListener("click", () => {
-          const preset = presets(compareMonthList().map((month) => month.key));
-          if (preset.quarter) applyRanges(preset.quarter.a, preset.quarter.b);
-        });
-        document.getElementById("presetYear").addEventListener("click", () => {
-          applyRanges({ start: "2026-01", end: "2026-11" }, { start: "2025-01", end: "2025-11" });
-        });
-        compareBound = true;
-      }
-      const preset = presets(months.map((month) => month.key));
-      const quarterButton = document.getElementById("presetQuarter");
-      quarterButton.disabled = !preset.quarter;
-      if (preset.month) applyRanges(preset.month.a, preset.month.b);
-    }
-    function compareMonthList() {
-      const jobs = COMPARE_JOBS || DATA.jobs;
-      const known = new Map((DATA.months || []).map((month) => [month.key, month.label]));
-      return [...new Set(jobs.map((job) => job.monthKey).filter(Boolean))].sort().map((key) => ({
-        key,
-        label: known.get(key) || monthLabel(key),
-      }));
-    }
-    function renderCompare() {
-      const ranges = currentRanges();
-      if (!ranges.a.start || !ranges.b.start) return;
-      const { a, b } = comparePeriods(COMPARE_JOBS || DATA.jobs, ranges.a, ranges.b);
-      const direction = orientPeriods(a, b);
-      const { earlier, later, earlierLabel, laterLabel, label } = direction;
-      document.getElementById("compareHeadEarlier").textContent = earlierLabel;
-      document.getElementById("compareHeadLater").textContent = laterLabel;
-      document.getElementById("compareHeadChange").textContent = label;
-      document.getElementById("compareTypeEarlier").textContent = earlierLabel;
-      document.getElementById("compareTypeLater").textContent = laterLabel;
-      document.getElementById("compareTypeChange").textContent = label;
-      document.getElementById("compareStateEarlier").textContent = earlierLabel;
-      document.getElementById("compareStateLater").textContent = laterLabel;
-      document.getElementById("compareStateChange").textContent = label;
-      const rows = [
-        ["Sales", money2(earlier.sales), money2(later.sales), periodChange(a, b, (period) => period.sales), true],
-        ["Commission", money2(earlier.commission), money2(later.commission), periodChange(a, b, (period) => period.commission), true],
-        ["Jobs", String(earlier.count), String(later.count), periodChange(a, b, (period) => period.count), false],
-        ["Avg job size", money2(earlier.avg), money2(later.avg), periodChange(a, b, (period) => period.avg), true],
-        ["Below 10% floor", String(earlier.belowFloor), String(later.belowFloor), periodChange(a, b, (period) => period.belowFloor), false],
-      ];
-      document.getElementById("compareBody").innerHTML = rows.map(([name, left, right, delta, money]) => {
-        const amount = money ? signedMoney(delta.diff) : signedCount(delta.diff);
-        return `<tr>
-          <td>${name}</td>
-          <td class="money">${left}</td>
-          <td class="money">${right}</td>
-          <td class="money delta ${deltaClass(delta.diff)}">${amount}</td>
-          <td class="delta ${deltaClass(delta.pct || 0)}">${fmtPct(delta.pct)}</td>
-        </tr>`;
-      }).join("");
-
-      const typeBody = typeRows(a, b).filter((row) => row.earlier.jobs || row.later.jobs).map((row) => `<tr>
-          <td>${row.name}</td>
-          <td class="money">${money2(row.earlier.sales)}</td>
-          <td class="money">${money2(row.later.sales)}</td>
-          <td class="money delta ${deltaClass(row.change.diff)}">${signedMoney(row.change.diff)}</td>
-          <td class="delta ${deltaClass(row.change.pct || 0)}">${fmtPct(row.change.pct)}</td>
-        </tr>`).join("") || `<tr><td colspan="5">No jobs in these ranges</td></tr>`;
-      document.getElementById("compareTypes").innerHTML = typeBody;
-
-      const stateBody = topStates(a, b).map((row) => `<tr>
-          <td>${row.state}</td>
-          <td class="money">${money2(row.earlier.sales)}</td>
-          <td class="money">${money2(row.later.sales)}</td>
-          <td class="money delta ${deltaClass(row.change.diff)}">${signedMoney(row.change.diff)}</td>
-          <td class="delta ${deltaClass(row.change.pct || 0)}">${fmtPct(row.change.pct)}</td>
-        </tr>`).join("") || `<tr><td colspan="5">No jobs in these ranges</td></tr>`;
-      document.getElementById("compareStates").innerHTML = stateBody;
-
-      destroy("compare");
-      charts.compare = new Chart(document.getElementById("compareChart"), {
-        type: "bar",
-        data: {
-          labels: [earlierLabel, laterLabel],
-          datasets: [
-            { label: "Sales", data: [earlier.sales, later.sales], backgroundColor: "rgba(27,42,74,.9)", borderRadius: 6 },
-            { label: "Commission", data: [earlier.commission, later.commission], backgroundColor: "rgba(78,98,138,.9)", borderRadius: 6 },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } },
-          scales: {
-            y: { ticks: { callback: axisMoney }, grid: { color: "#eef2f7" } },
-          },
-        },
-      });
-    }
-
-    function renderTable(jobs) {
-      const sorted = [...jobs].sort((a, b) => (b.dateSoldIso || "").localeCompare(a.dateSoldIso || ""));
-      document.getElementById("jobsCaption").textContent = `${sorted.length} jobs · newest first`;
-      document.getElementById("jobsBody").innerHTML = sorted.slice(0, 40).map((j) =>
-        `<tr>
-          <td>${j.dateSold || "—"}</td>
-          <td>${j.zoho}</td>
-          <td>${j.client}</td>
-          <td>${j.jobType}</td>
-          <td>${j.location || "—"}</td>
-          <td class="money">${money2(j.charged)}</td>
-          <td class="money">${money2(j.commission)}</td>
-          <td>${statusPill(j.status)}</td>
-        </tr>`
-      ).join("");
-    }
-  </script>
+  <script type="module" src="./dashboard.js"></script>
 </body>
 </html>

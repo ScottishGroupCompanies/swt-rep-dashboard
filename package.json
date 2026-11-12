@@ -1,18 +1,20 @@
 {
   "name": "swt-rep-dashboard",
   "private": true,
-  "version": "0.1.0",
-  "description": "Scottish Window Tinting sales rep commission dashboard (demo)",
+  "version": "0.2.0",
+  "description": "Scottish Group Companies sales dashboards for SWT and SSG",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "prebuild": "node --test test/commission.test.js",
+    "prebuild": "node --test test/commission.test.js test/sales.test.js test/exclude.test.js test/api.test.js test/logins.test.js test/totals.test.js test/compare.test.js",
     "build": "node scripts/build.mjs",
-    "start": "python3 -m http.server 4173 --directory public",
+    "start": "node scripts/dev-server.mjs",
     "prestart": "npm run build",
-    "recompute": "node scripts/recompute.mjs",
     "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.9.0"
   }
 }
