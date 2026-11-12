@@ -1,0 +1,6 @@
+{
+  "admin": { "name": "Jenny", "code": "change-me" },
+  "reps": [
+    { "name": "Ada", "rep": "Ada Example", "code": "change-me" }
+  ]
+}

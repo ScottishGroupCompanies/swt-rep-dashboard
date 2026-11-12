@@ -3,3 +3,5 @@ public/
 .vercel/
 .DS_Store
 *.log
+logins.local.json
+data/local/

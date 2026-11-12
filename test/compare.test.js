@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   change,
@@ -70,47 +69,23 @@ test("presets are this month vs last month and this quarter vs last quarter", ()
   assert.equal(preset.quarter.b.end, "2026-09");
 });
 
-test("Nick snapshot Nov vs Oct uses stored job totals", async () => {
-  const data = JSON.parse(await readFile(new URL("../data/nick_dashboard.json", import.meta.url), "utf8"));
-  assert.equal(data.rep.displayName, "Nick");
-  const { a, b } = comparePeriods(
-    data.jobs,
-    { start: "2026-11", end: "2026-11" },
-    { start: "2026-10", end: "2026-10" },
-  );
-  const sum = (rows, field) => Math.round(rows.reduce((total, job) => total + Number(job[field] || 0), 0) * 100);
-  const nov = data.jobs.filter((job) => job.monthKey === "2026-11");
-  const oct = data.jobs.filter((job) => job.monthKey === "2026-10");
-  assert.equal(Math.round(a.sales * 100), sum(nov, "charged"));
-  assert.equal(Math.round(a.commission * 100), sum(nov, "commission"));
-  assert.equal(a.count, nov.length);
-  assert.equal(a.belowFloor, nov.filter((job) => job.status === "below_floor").length);
-  assert.equal(Math.round(b.sales * 100), sum(oct, "charged"));
-  assert.equal(b.count, oct.length);
-  const preset = presets(data.months.map((month) => month.key));
-  assert.deepEqual(preset.month.a, { start: "2026-11", end: "2026-11" });
-  assert.deepEqual(preset.month.b, { start: "2026-10", end: "2026-10" });
-  assert.equal(preset.quarter.a.start, "2026-10");
-  assert.equal(preset.quarter.b.start, "2026-07");
-  assert.equal(preset.quarter.b.end, "2026-09");
-});
-
-test("Sep 2026 to Oct 2026 is +$14,569.56 / +306.1% in either slot", async () => {
-  const data = JSON.parse(await readFile(new URL("../data/nick_dashboard.json", import.meta.url), "utf8"));
+test("change is the later period minus the earlier period in either slot", () => {
+  const sample = [
+    { monthKey: "2026-09", charged: 100, commission: 1, status: "ok", jobType: "Residential", state: "CO" },
+    { monthKey: "2026-10", charged: 250, commission: 2, status: "ok", jobType: "Commercial", state: "TX" },
+  ];
   const sep = { start: "2026-09", end: "2026-09" };
   const oct = { start: "2026-10", end: "2026-10" };
-  const fields = ["sales", "commission", "count", "avg", "belowFloor"];
-
   for (const [rangeA, rangeB] of [[sep, oct], [oct, sep]]) {
-    const { a, b } = comparePeriods(data.jobs, rangeA, rangeB);
+    const { a, b } = comparePeriods(sample, rangeA, rangeB);
     const direction = orientPeriods(a, b);
     assert.equal(direction.label, "Sep 2026 → Oct 2026");
-    assert.equal(Math.round(direction.earlier.sales * 100), 475904);
-    assert.equal(Math.round(direction.later.sales * 100), 1932860);
+    assert.equal(direction.earlier.sales, 100);
+    assert.equal(direction.later.sales, 250);
     const sales = periodChange(a, b, (period) => period.sales);
-    assert.equal(Math.round(sales.diff * 100), 1456956);
-    assert.equal(sales.pct.toFixed(1), "306.1");
-    for (const field of fields) {
+    assert.equal(sales.diff, 150);
+    assert.equal(sales.pct.toFixed(1), "150.0");
+    for (const field of ["sales", "count", "avg"]) {
       const delta = periodChange(a, b, (period) => period[field]);
       assert.equal(delta.diff, direction.later[field] - direction.earlier[field], field);
     }

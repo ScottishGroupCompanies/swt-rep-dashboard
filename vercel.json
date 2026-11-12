@@ -4,12 +4,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "public",
   "cleanUrls": true,
+  "functions": {
+    "api/ingest/data.js": { "maxDuration": 30 },
+    "api/ingest/commission.js": { "maxDuration": 30 }
+  },
   "headers": [
     {
-      "source": "/data.json",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=60" }
-      ]
+      "source": "/api/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
     }
   ]
 }

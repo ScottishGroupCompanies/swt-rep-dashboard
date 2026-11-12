@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { computeCommission } from "../src/commission.js";
 
@@ -71,49 +70,4 @@ test("invalid charged amount is flagged for review", () => {
   assert.equal(row.status, "needs_review");
   assert.equal(row.commission, null);
   assert.equal(row.listVerified, false);
-});
-
-test("snapshot jobs and rollups follow the commission engine for Nick at 7%", async () => {
-  const raw = await readFile(new URL("../data/nick_dashboard.json", import.meta.url), "utf8");
-  const data = JSON.parse(raw);
-  assert.equal(data.rep.displayName, "Nick");
-  assert.equal(data.rep.rate, NICK);
-  assert.equal(data.jobs.length, data.kpis.jobCount);
-
-  const cents = (n) => Math.round(Number(n) * 100);
-  let salesCents = 0;
-  let commissionCents = 0;
-  let belowFloor = 0;
-  const byMonth = new Map();
-
-  for (const job of data.jobs) {
-    const row = computeCommission(NICK, job.charged, job.listPrice);
-    salesCents += cents(job.charged);
-    commissionCents += cents(job.commission);
-    if (job.status === "below_floor") belowFloor += 1;
-    if (job.monthKey) {
-      const bucket = byMonth.get(job.monthKey) || { sales: 0, commission: 0, jobs: 0 };
-      bucket.sales += cents(job.charged);
-      bucket.commission += cents(job.commission);
-      bucket.jobs += 1;
-      byMonth.set(job.monthKey, bucket);
-    }
-    assert.equal(row.status, job.status, job.id);
-    assert.equal(row.listVerified, job.listVerified, job.id);
-    assert.equal(row.commission, job.commission, job.id);
-    assert.equal(row.commissionBase, job.commissionBase, job.id);
-  }
-
-  assert.equal(data.kpis.belowFloorCount, belowFloor);
-  assert.equal(cents(data.kpis.ytdSales), salesCents);
-  assert.equal(cents(data.kpis.ytdCommission), commissionCents);
-  assert.equal(cents(data.kpis.expectedPayrollCommission), cents(data.kpis.thisMonthCommission));
-
-  for (const month of data.months) {
-    const bucket = byMonth.get(month.key);
-    assert.ok(bucket, month.key);
-    assert.equal(cents(month.sales), bucket.sales, month.key);
-    assert.equal(cents(month.commission), bucket.commission, month.key);
-    assert.equal(month.jobs, bucket.jobs, month.key);
-  }
 });
