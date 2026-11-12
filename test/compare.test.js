@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calendarQuarter,
   change,
   comparePeriods,
   orientPeriods,
   periodChange,
   presets,
+  quarterOf,
   rangeLabel,
   topStates,
   typeRows,
@@ -63,10 +65,74 @@ test("presets are this month vs last month and this quarter vs last quarter", ()
     a: { start: "2026-11", end: "2026-11" },
     b: { start: "2026-10", end: "2026-10" },
   });
+  assert.deepEqual(preset.quarter.a, calendarQuarter(2026, 4));
+  assert.deepEqual(preset.quarter.b, calendarQuarter(2026, 3));
   assert.equal(preset.quarter.a.start, "2026-10");
-  assert.equal(preset.quarter.a.end, "2026-11");
-  assert.equal(preset.quarter.b.start, "2026-08");
+  assert.equal(preset.quarter.a.end, "2026-12");
+  assert.equal(preset.quarter.b.start, "2026-07");
   assert.equal(preset.quarter.b.end, "2026-09");
+});
+
+test("calendar quarters are Jan–Mar, Apr–Jun, Jul–Sep, and Oct–Dec", () => {
+  const bounds = [
+    ["2026-01", 1, "2026-01", "2026-03"],
+    ["2026-02", 1, "2026-01", "2026-03"],
+    ["2026-03", 1, "2026-01", "2026-03"],
+    ["2026-04", 2, "2026-04", "2026-06"],
+    ["2026-06", 2, "2026-04", "2026-06"],
+    ["2026-07", 3, "2026-07", "2026-09"],
+    ["2026-09", 3, "2026-07", "2026-09"],
+    ["2026-10", 4, "2026-10", "2026-12"],
+    ["2026-12", 4, "2026-10", "2026-12"],
+    ["2025-12", 4, "2025-10", "2025-12"],
+  ];
+  for (const [month, quarter, start, end] of bounds) {
+    const found = quarterOf(month);
+    assert.equal(found.quarter, quarter, month);
+    assert.equal(found.year, Number(month.slice(0, 4)), month);
+    const range = calendarQuarter(found.year, found.quarter);
+    assert.equal(range.start, start, month);
+    assert.equal(range.end, end, month);
+  }
+  assert.equal(quarterOf("2026-03").quarter, 1);
+  assert.equal(quarterOf("2026-04").quarter, 2);
+  assert.equal(presets(["2026-01"]).quarter.b.id, "2025-Q4");
+  assert.equal(presets(["2026-01"]).quarter.b.start, "2025-10");
+  assert.equal(presets(["2026-01"]).quarter.b.end, "2025-12");
+});
+
+test("different Month Sold periods total different jobs, ignoring date sold", () => {
+  const sample = [
+    { monthKey: "2026-01", charged: 10, commission: 0, status: "ok", jobType: "Residential", state: "CO", dateSold: "2025-11-02" },
+    { monthKey: "2026-03", charged: 20, commission: 0, status: "ok", jobType: "Residential", state: "CO", dateSold: "2024-01-01" },
+    { monthKey: "2026-04", charged: 40, commission: 0, status: "ok", jobType: "Commercial", state: "TX", dateSold: "2026-04-02" },
+    { monthKey: "2026-12", charged: 3, commission: 0, status: "ok", jobType: "Commercial", state: "TX", dateSold: "2021-05-01" },
+    { monthKey: "2025-12", charged: 999, commission: 0, status: "ok", jobType: "Residential", state: "CO", dateSold: "2026-01-15" },
+  ];
+  const q1 = { start: "2026-01", end: "2026-03" };
+  const q2 = { start: "2026-04", end: "2026-06" };
+  const q4 = { start: "2026-10", end: "2026-12" };
+  const january = { start: "2026-01", end: "2026-01" };
+
+  const first = comparePeriods(sample, january, q1);
+  assert.equal(first.a.sales, 10);
+  assert.equal(first.a.count, 1);
+  assert.equal(first.b.sales, 30);
+  assert.equal(first.b.count, 2);
+  assert.notEqual(first.a.sales, first.b.sales);
+
+  const quarters = comparePeriods(sample, q2, q4);
+  assert.equal(quarters.a.sales, 40);
+  assert.equal(quarters.a.count, 1);
+  assert.equal(quarters.b.sales, 3);
+  assert.equal(quarters.b.count, 1);
+  const direction = orientPeriods(quarters.a, quarters.b);
+  assert.equal(direction.label, "Apr–Jun 2026 → Oct–Dec 2026");
+  assert.equal(periodChange(quarters.a, quarters.b, (period) => period.sales).diff, 3 - 40);
+
+  const december = comparePeriods(sample, { start: "2025-12", end: "2025-12" }, january);
+  assert.equal(december.a.sales, 999);
+  assert.equal(december.b.sales, 10);
 });
 
 test("change is the later period minus the earlier period in either slot", () => {

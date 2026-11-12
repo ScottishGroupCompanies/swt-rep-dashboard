@@ -29,6 +29,14 @@ export function quarterOf(monthKey) {
   return { year, quarter, id: `${year}-Q${quarter}` };
 }
 
+/** Full calendar quarter. Q1 is January–March, Q2 April–June, Q3 July–September, Q4 October–December. */
+export function calendarQuarter(year, quarter) {
+  const startMonth = (quarter - 1) * 3 + 1;
+  const endMonth = startMonth + 2;
+  const key = (month) => `${year}-${String(month).padStart(2, "0")}`;
+  return { year, quarter, id: `${year}-Q${quarter}`, start: key(startMonth), end: key(endMonth) };
+}
+
 export function shiftMonth(monthKey, delta) {
   const [year, month] = monthKey.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1 + delta, 1));
@@ -40,23 +48,12 @@ function sortedKeys(monthKeys) {
 }
 
 export function listQuarters(monthKeys) {
-  const map = new Map();
+  const seen = new Map();
   for (const key of sortedKeys(monthKeys)) {
     const quarter = quarterOf(key);
-    const row = map.get(quarter.id) || { ...quarter, start: key, end: key };
-    row.end = key;
-    map.set(quarter.id, row);
+    seen.set(quarter.id, calendarQuarter(quarter.year, quarter.quarter));
   }
-  return [...map.values()];
-}
-
-function quarterBounds(monthKeys, year, quarter) {
-  const keys = sortedKeys(monthKeys).filter((key) => {
-    const found = quarterOf(key);
-    return found.year === year && found.quarter === quarter;
-  });
-  if (!keys.length) return null;
-  return { start: keys[0], end: keys[keys.length - 1], id: `${year}-Q${quarter}` };
+  return [...seen.values()];
 }
 
 export function presets(monthKeys) {
@@ -68,14 +65,15 @@ export function presets(monthKeys) {
   const current = quarterOf(latest);
   const prevYear = current.quarter === 1 ? current.year - 1 : current.year;
   const prevQuarter = current.quarter === 1 ? 4 : current.quarter - 1;
-  const thisQuarter = quarterBounds(keys, current.year, current.quarter);
-  const lastQuarter = quarterBounds(keys, prevYear, prevQuarter);
   return {
     month: {
       a: { start: latest, end: latest },
       b: { start: previous, end: previous },
     },
-    quarter: thisQuarter && lastQuarter ? { a: thisQuarter, b: lastQuarter } : null,
+    quarter: {
+      a: calendarQuarter(current.year, current.quarter),
+      b: calendarQuarter(prevYear, prevQuarter),
+    },
   };
 }
 
