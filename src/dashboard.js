@@ -1,4 +1,5 @@
-import { comparePeriods, orientPeriods, periodChange, presets, topStates, typeRows } from "./compare.js";
+import { change, comparePeriods, orientPeriods, periodChange, presets, topStates, typeRows } from "./compare.js";
+import { compareReps, periodLabel } from "./rep-compare.js";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const view = { company: null, year: null, rep: null };
@@ -136,7 +137,12 @@ function jobRows(jobs) {
     .join("");
 }
 
-function leaderboardHtml(rows) {
+function leaderboardHtml(rows, years) {
+  const yearOptions = (years || []).map((year) => `<option value="${esc(year)}">${esc(year)}</option>`).join("");
+  const monthOptions = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    .map((name, index) => `<option value="${index + 1}">${name}</option>`)
+    .join("");
+  const quarterOptions = [1, 2, 3, 4].map((quarter) => `<option value="${quarter}">Q${quarter}</option>`).join("");
   return `<section class="card"><h2>Leaderboard</h2><p class="caption">Everyone on this company sheet, including inactive reps and codes with no login. Names are first names.</p>
     <div class="scroll"><table class="jobs"><thead><tr><th>Rep</th><th>Sales</th><th>Jobs</th><th></th></tr></thead><tbody>
     ${rows
@@ -147,10 +153,20 @@ function leaderboardHtml(rows) {
       .join("")}
     </tbody></table></div>
     <h2 style="margin-top:18px">Compare reps</h2>
-    <p class="caption">Pick two or more reps to compare this sheet year.</p>
+    <p class="caption">Pick two or more reps in this company. Compare a full sheet year, one Month Sold, or a calendar quarter. Add a second period to see the same reps side by side.</p>
     <div class="rep-picker" id="repPicker">${rows
-      .map((row) => `<label><input type="checkbox" data-compare-rep="${esc(row.repKey)}" /> ${esc(row.name)}</label>`)
+      .map((row) => `<label><input type="checkbox" data-versus="rep" data-versus-name="${esc(row.name)}" value="${esc(row.repKey)}" /> ${esc(row.name)}</label>`)
       .join("")}</div>
+    <div class="filters">
+      <label>Mode <select id="versusMode" data-versus="mode"><option value="month">Month vs month</option><option value="quarter">Quarter vs quarter</option><option value="year">Year vs year</option></select></label>
+      <label>Year <select id="versusYear" data-versus="year">${yearOptions}</select></label>
+      <label id="versusMonthWrap">Month <select id="versusMonth" data-versus="month">${monthOptions}</select></label>
+      <label id="versusQuarterWrap" hidden>Quarter <select id="versusQuarter" data-versus="quarter">${quarterOptions}</select></label>
+      <label><input type="checkbox" id="versusSecond" data-versus="second" value="yes" /> Second period</label>
+      <label id="versusYear2Wrap" hidden>Year <select id="versusYear2" data-versus="year2">${yearOptions}</select></label>
+      <label id="versusMonth2Wrap" hidden>Month <select id="versusMonth2" data-versus="month2">${monthOptions}</select></label>
+      <label id="versusQuarter2Wrap" hidden>Quarter <select id="versusQuarter2" data-versus="quarter2">${quarterOptions}</select></label>
+    </div>
     <div id="repCompare"></div>
     <div class="chart-wrap"><canvas id="repCompareChart"></canvas></div>
   </section>`;
@@ -245,7 +261,7 @@ function render(data) {
     </section>
     ${data.yoyMonths ? `<section class="card"><h2>Year over year</h2><p class="caption">Sheet ${esc(data.year)} against sheet ${esc(kpis.priorYear)}, matched on calendar month.</p><div class="chart-wrap"><canvas id="yoyChart"></canvas></div></section>` : ""}
     ${compareHtml(compareMonths)}
-    ${data.leaderboard ? leaderboardHtml(data.leaderboard) : ""}
+    ${data.leaderboard ? leaderboardHtml(data.leaderboard, data.years) : ""}
     <section class="card"><h2>Recent jobs</h2><p class="caption">Latest dates on this sheet year.</p>
       <div class="scroll"><table class="jobs"><thead><tr><th>Date sold</th><th>Month sold</th><th>Job</th><th>${data.role === "admin" ? "Rep" : ""}</th><th>State</th><th>Type</th><th>Amount</th></tr></thead><tbody>${jobRows(data.recent || [])}</tbody></table></div>
     </section>
@@ -261,6 +277,9 @@ function render(data) {
     renderCompare();
   }
   drawCharts(data);
+  if (document.getElementById("versusYear") && data.year) document.getElementById("versusYear").value = data.year;
+  if (document.getElementById("versusMonth")) document.getElementById("versusMonth").value = "8";
+  if (document.getElementById("versusQuarter")) document.getElementById("versusQuarter").value = "1";
   renderRepCompare();
   } finally {
     rendering = false;
@@ -376,27 +395,79 @@ function renderCompare() {
   });
 }
 
+function selectedVersusReps() {
+  return [...document.querySelectorAll("[data-versus='rep']:checked")].map((box) => ({
+    repKey: box.value,
+    name: box.dataset.versusName,
+  }));
+}
+
+function versusPeriod(suffix) {
+  const mode = document.getElementById("versusMode").value;
+  return {
+    mode,
+    year: document.getElementById(suffix ? "versusYear2" : "versusYear").value,
+    month: Number(document.getElementById(suffix ? "versusMonth2" : "versusMonth").value),
+    quarter: Number(document.getElementById(suffix ? "versusQuarter2" : "versusQuarter").value),
+  };
+}
+
+function showVersusFields() {
+  const mode = document.getElementById("versusMode")?.value;
+  const second = document.getElementById("versusSecond")?.checked;
+  const month = mode === "month";
+  const quarter = mode === "quarter";
+  document.getElementById("versusMonthWrap").hidden = !month;
+  document.getElementById("versusQuarterWrap").hidden = !quarter;
+  document.getElementById("versusYear2Wrap").hidden = !second;
+  document.getElementById("versusMonth2Wrap").hidden = !second || !month;
+  document.getElementById("versusQuarter2Wrap").hidden = !second || !quarter;
+}
+
 function renderRepCompare() {
   const root = document.getElementById("repCompare");
   const canvas = document.getElementById("repCompareChart");
-  if (!root || !current?.leaderboard) return;
-  const selected = [...document.querySelectorAll("[data-compare-rep]:checked")].map((box) => box.dataset.compareRep);
-  const rows = current.leaderboard.filter((row) => selected.includes(row.repKey));
-  if (rows.length < 2) {
+  if (!root || !current?.leaderboard || !document.getElementById("versusMode")) return;
+  showVersusFields();
+  const reps = selectedVersusReps();
+  if (reps.length < 2) {
     root.innerHTML = `<p class="notice">Select at least two reps.</p>`;
+    const existing = typeof Chart !== "undefined" && Chart.getChart?.(canvas);
+    if (existing) existing.destroy();
     return;
   }
-  root.innerHTML = `<div class="scroll"><table class="jobs"><thead><tr><th>Rep</th><th>Sales</th><th>Jobs</th></tr></thead><tbody>${rows
-    .map((row) => `<tr><td>${esc(row.name)}</td><td class="money">${money.format(row.sales)}</td><td>${row.jobs}</td></tr>`)
-    .join("")}</tbody></table></div>`;
+  const periods = [versusPeriod(false)];
+  if (document.getElementById("versusSecond").checked) periods.push(versusPeriod(true));
+  const result = compareReps(current.jobs || [], { reps, periods });
+  const two = result.periods.length === 2;
+  const header = two
+    ? `<th>${esc(result.periods[0].label)} jobs</th><th>${esc(result.periods[0].label)} sales</th><th>${esc(result.periods[1].label)} jobs</th><th>${esc(result.periods[1].label)} sales</th><th>Second − first</th>`
+    : `<th>Jobs</th><th>Sales</th>`;
+  const body = result.periods[0].rows
+    .map((row, index) => {
+      const other = two ? result.periods[1].rows[index] : null;
+      const delta = other ? deltaHtml(change(other.sales, row.sales)) : "";
+      return `<tr><td>${esc(row.name)}</td>${
+        two
+          ? `<td>${row.jobs}</td><td class="money">${money.format(row.sales)}</td><td>${other.jobs}</td><td class="money">${money.format(other.sales)}</td><td>${delta}</td>`
+          : `<td>${row.jobs}</td><td class="money">${money.format(row.sales)}</td>`
+      }</tr>`;
+    })
+    .join("");
+  root.innerHTML = `<div class="scroll"><table class="jobs"><thead><tr><th>Rep</th>${header}</tr></thead><tbody>${body}</tbody></table></div>`;
   chart(canvas, {
     type: "bar",
     data: {
-      labels: rows.map((row) => row.name),
-      datasets: [{ label: "Sales", data: rows.map((row) => row.sales), backgroundColor: "#1B2A4A" }],
+      labels: result.periods[0].rows.map((row) => row.name),
+      datasets: result.periods.map((period, index) => ({
+        label: period.label,
+        data: period.rows.map((row) => row.sales),
+        backgroundColor: index === 0 ? "#1B2A4A" : "#4E628A",
+      })),
     },
-    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
   });
+  root.dataset.period = result.periods.map((period) => periodLabel(period)).join("|");
 }
 
 function applyPreset(kind) {
@@ -481,7 +552,7 @@ document.body.addEventListener("change", (event) => {
     load();
   }
   if (event.target.matches?.("[data-compare]")) renderCompare();
-  if (event.target.dataset.compareRep != null) renderRepCompare();
+  if (event.target.matches?.("[data-versus]")) renderRepCompare();
 });
 
 showGate();

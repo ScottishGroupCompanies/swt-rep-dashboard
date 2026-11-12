@@ -8,6 +8,6 @@ const out = join(root, "public");
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 
-for (const file of ["index.html", "dashboard.js", "compare.js", "favicon.svg"]) {
+for (const file of ["index.html", "dashboard.js", "compare.js", "rep-compare.js", "favicon.svg"]) {
   await cp(join(root, "src", file), join(out, file));
 }

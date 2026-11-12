@@ -12,6 +12,8 @@ The name list is `DASHBOARD_LOGINS`, a server environment variable. It is not wr
 
 Display names in the dashboard are the first name only (`Ada Example` is shown as Ada). Initials that are a single word stay as written.
 
+On the admin company view, pick two or more reps, then Year vs year, Month vs month, or Quarter vs quarter. Quarters are calendar quarters of Month Sold on that sheet tab. Check “Second period” to put the same reps side by side for another year, month, or quarter. Rep logins cannot request that comparison.
+
 For the first setup, put `0000` in the gitignored login file for every person. Change one person's code later by editing that file and replacing the `DASHBOARD_LOGINS` value. No application change is required.
 
 ```bash
