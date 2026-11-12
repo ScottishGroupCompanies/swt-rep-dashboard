@@ -156,6 +156,19 @@ function leaderboardHtml(rows) {
   </section>`;
 }
 
+function compareMonthKeys(jobs) {
+  const years = new Set(
+    (jobs || []).map((job) => job.month).filter(Boolean).map((key) => key.slice(0, 4)),
+  );
+  const keys = [];
+  for (const year of [...years].sort()) {
+    for (let month = 1; month <= 12; month += 1) {
+      keys.push(`${year}-${String(month).padStart(2, "0")}`);
+    }
+  }
+  return keys;
+}
+
 function compareHtml(months) {
   if (months.length < 2) return "";
   const options = months
@@ -169,12 +182,12 @@ function compareHtml(months) {
     </div>
     <div class="compare-ranges">
       <div class="period a"><strong>Period A</strong>
-        <label>From<select id="fromA" data-compare>${options}</select></label>
-        <label>To<select id="toA" data-compare>${options}</select></label>
+        <label>From<select id="fromA" data-compare="period">${options}</select></label>
+        <label>To<select id="toA" data-compare="period">${options}</select></label>
       </div>
       <div class="period b"><strong>Period B</strong>
-        <label>From<select id="fromB" data-compare>${options}</select></label>
-        <label>To<select id="toB" data-compare>${options}</select></label>
+        <label>From<select id="fromB" data-compare="period">${options}</select></label>
+        <label>To<select id="toB" data-compare="period">${options}</select></label>
       </div>
     </div>
     <div id="compareOut"></div></section>`;
@@ -211,6 +224,7 @@ function render(data) {
 
   const kpis = data.kpis;
   const monthKeys = [...new Set((data.jobs || []).map((job) => job.month).filter(Boolean))].sort();
+  const compareMonths = compareMonthKeys(data.jobs || []);
   document.getElementById("dash").innerHTML = `
     <section class="kpi-grid">
       <article class="kpi accent"><div class="label">Sales</div><div class="value" id="kpiSales">${money.format(kpis.sales)}</div><div class="hint">${kpis.jobs} jobs on sheet ${esc(data.year || "")}</div></article>
@@ -230,7 +244,7 @@ function render(data) {
       <article class="card"><h2>Job type</h2><p class="caption">Residential, commercial, and the other types on the sheet.</p>${bars(data.types)}</article>
     </section>
     ${data.yoyMonths ? `<section class="card"><h2>Year over year</h2><p class="caption">Sheet ${esc(data.year)} against sheet ${esc(kpis.priorYear)}, matched on calendar month.</p><div class="chart-wrap"><canvas id="yoyChart"></canvas></div></section>` : ""}
-    ${compareHtml(monthKeys)}
+    ${compareHtml(compareMonths)}
     ${data.leaderboard ? leaderboardHtml(data.leaderboard) : ""}
     <section class="card"><h2>Recent jobs</h2><p class="caption">Latest dates on this sheet year.</p>
       <div class="scroll"><table class="jobs"><thead><tr><th>Date sold</th><th>Month sold</th><th>Job</th><th>${data.role === "admin" ? "Rep" : ""}</th><th>State</th><th>Type</th><th>Amount</th></tr></thead><tbody>${jobRows(data.recent || [])}</tbody></table></div>
@@ -466,7 +480,7 @@ document.body.addEventListener("change", (event) => {
     view.year = event.target.value;
     load();
   }
-  if (event.target.dataset.compare) renderCompare();
+  if (event.target.matches?.("[data-compare]")) renderCompare();
   if (event.target.dataset.compareRep != null) renderRepCompare();
 });
 
