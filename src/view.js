@@ -1,4 +1,5 @@
 import { change } from "./compare.js";
+import { compareReps } from "./rep-compare.js";
 import { companyLabel, firstName, isExcludedRep, repKey } from "./reps.js";
 import { allJobs, dollars, monthLabel, sumCents } from "./sales.js";
 
@@ -190,7 +191,36 @@ function recentJobs(rows) {
     .map(publicJob);
 }
 
+function comparisonFromQuery(query, jobs, roster) {
+  const mode = query.compare;
+  if (!["year", "month", "quarter"].includes(mode)) return null;
+  const keys = String(query.reps || "")
+    .split(",")
+    .map((key) => key.trim())
+    .filter(Boolean);
+  const reps = keys.map((key) => roster.find((rep) => rep.repKey === key)).filter(Boolean);
+  const period = {
+    mode,
+    year: String(query.year || ""),
+    month: Number(query.month),
+    quarter: Number(query.quarter),
+  };
+  const periods = [period];
+  if (query.year2) {
+    periods.push({
+      mode,
+      year: String(query.year2),
+      month: Number(query.month2 || query.month),
+      quarter: Number(query.quarter2 || query.quarter),
+    });
+  }
+  return compareReps(jobs, { reps, periods });
+}
+
 export function buildDashboard(snapshot, session, query) {
+  if (query.compare && session.role !== "admin") {
+    return { status: 403, body: { error: "Rep comparisons are admin only." } };
+  }
   const allowed = session.role === "admin" ? ["SWT", "SSG"] : companiesForRep(snapshot, session.rep);
   if (session.role !== "admin" && (isExcludedRep(session.rep) || isExcludedRep(session.name))) {
     return { status: 403, body: { error: "This login has no personal dashboard." } };
@@ -238,6 +268,12 @@ export function buildDashboard(snapshot, session, query) {
   const prior = hasPrior ? yearView(scope, priorYear) : null;
 
   const showLeaderboard = session.role === "admin" && !viewing;
+  const companyJobs = allJobs(snapshot).filter((job) => job.company === requested);
+  const roster = showLeaderboard ? leaderboard(companyJobs, snapshot, requested, year) : [];
+  const repCompare =
+    session.role === "admin" && query.compare
+      ? comparisonFromQuery(query, companyJobs.map(publicJob), roster.length ? roster : leaderboard(companyJobs, snapshot, requested, year))
+      : null;
   return {
     status: 200,
     body: {
@@ -274,7 +310,8 @@ export function buildDashboard(snapshot, session, query) {
       types: current.types,
       yoyMonths: hasPrior ? yoyMonths(current.rows, prior.rows, year, priorYear) : null,
       recent: recentJobs(current.rows),
-      leaderboard: showLeaderboard ? leaderboard(allJobs(snapshot), snapshot, requested, year) : null,
+      leaderboard: showLeaderboard ? roster : null,
+      repCompare,
       jobs: scope.map(publicJob),
       commission: { status: "coming_soon" },
     },

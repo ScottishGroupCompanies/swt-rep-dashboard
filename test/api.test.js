@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { hashCode } from "../src/auth.js";
+import { repKey } from "../src/reps.js";
 import { handle as dashboard } from "../api/data/dashboard.js";
 import { handle as login } from "../api/auth/login.js";
 import { handle as names } from "../api/auth/names.js";
@@ -140,6 +141,34 @@ test("reps only receive their own companies and HOO has no personal dashboard", 
   });
   assert.equal(admin.body.kpis.sales, 95);
   assert.equal(admin.body.leaderboard.find((row) => row.name === "HOO").sales, 70);
+});
+
+test("a rep cannot request another rep's comparison", async () => {
+  await ingest(post(upload, { authorization: "Bearer ingest-test-token" }));
+  const adaLogin = await login(post({ name: "Ada", code: "test-code" }, {}, "10.2.0.2"));
+  const denied = await dashboard({
+    method: "GET",
+    headers: { cookie: adaLogin.headers["Set-Cookie"] },
+    url: `/api/data/dashboard?company=SSG&compare=month&year=2026&month=3&reps=${repKey("HOO")},${repKey("Ada Example")}`,
+  });
+  assert.equal(denied.status, 403);
+  assert.equal(JSON.stringify(denied.body).includes("repCompare"), false);
+  assert.equal(JSON.stringify(denied.body).includes("70"), false);
+
+  const jenny = await login(post({ name: "Jenny", code: "test-code" }, {}, "10.2.0.3"));
+  const admin = await dashboard({
+    method: "GET",
+    headers: { cookie: jenny.headers["Set-Cookie"] },
+    url: `/api/data/dashboard?company=SSG&compare=quarter&year=2026&quarter=1&reps=${repKey("HOO")},${repKey("Ada Example")}`,
+  });
+  assert.equal(admin.status, 200);
+  assert.deepEqual(
+    admin.body.repCompare.periods[0].rows.map((row) => [row.name, row.jobs, row.sales]),
+    [
+      ["HOO", 1, 70],
+      ["Ada", 0, 0],
+    ],
+  );
 });
 
 test("failed codes are rate limited", async () => {

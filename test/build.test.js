@@ -8,7 +8,7 @@ test("build publishes the sign-in shell without sales data", async () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
 
   const names = await readdir(new URL("../public/", import.meta.url));
-  assert.deepEqual(names.sort(), ["compare.js", "dashboard.js", "favicon.svg", "index.html"]);
+  assert.deepEqual(names.sort(), ["compare.js", "dashboard.js", "favicon.svg", "index.html", "rep-compare.js"]);
 
   const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
   const client = await readFile(new URL("../public/dashboard.js", import.meta.url), "utf8");
