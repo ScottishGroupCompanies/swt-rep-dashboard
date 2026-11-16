@@ -1,12 +1,12 @@
 # Scottish Group Companies rep dashboard
 
-Sales dashboards for **Scottish Window Tinting (SWT)** and **Scottish Stained Glass (SSG)**. Each active rep signs in to their own sales. Jenny's login is the admin view for both companies. The page shows sales only. Commission is stored for a later update and is not shown.
+Sales dashboards for **Scottish Window Tinting (SWT)**, **Scottish Stained Glass (SSG)**, and **Scottish Home Improvements (SHI)**. Each active rep signs in to their own sales. Jenny's login is the admin view for every company. The page shows sales only. Commission is stored for a later update and is not shown.
 
 Real job files, rep codes, and sign-in codes are not part of this repository. The browser downloads no sales file until someone signs in, and the static site contains none.
 
 ## Sign-in
 
-The name list is `DASHBOARD_LOGINS`, a server environment variable. It is not written in the app. One login covers a person who sells for both companies: the company switch then shows SWT and SSG. Reps only receive their own jobs. Inactive reps are not given logins by the generator below. They still appear on the admin leaderboard.
+The name list is `DASHBOARD_LOGINS`, a server environment variable. It is not written in the app. One login covers a person who sells for more than one company: the company switch then shows each company where that full name appears, including SHI. Reps only receive their own jobs. Inactive reps are not given logins by the generator below. They still appear on the admin leaderboard.
 
 `HOO` is a non-person code. It never gets a login or a personal dashboard, even if a row marks it active and even if it is pasted into `DASHBOARD_LOGINS`. Its sales stay in the admin company totals and leaderboard. Add more non-person codes with `DASHBOARD_EXCLUDE_REPS` (comma-separated). That does not require an application change.
 
@@ -39,13 +39,13 @@ Login records look like:
 }
 ```
 
-`rep` is the Designer value from the sheet, matched across both companies. The dropdown label is the object key.
+`rep` is the Designer value from the sheet, matched across SWT, SSG, and SHI. The dropdown label is the object key.
 
 Codes are checked with scrypt on the server. The session is an httpOnly signed cookie (`SESSION_SECRET`). Eight failed attempts from one address lock that address for 15 minutes.
 
 ## Sales files
 
-`swt_jobs.json` and `ssg_jobs.json`:
+`swt_jobs.json`, `ssg_jobs.json`, and optional `shi_jobs.json` use the same job shape. SHI job totals already include the contract, permits, and change orders, and they have no separate 4% fee, so `amount` still equals `amount_pre_fee`.
 
 ```json
 {
@@ -105,16 +105,40 @@ Content-Type: application/json
 ```
 
 ```json
-{ "swt_jobs": { "generated_at": "…", "jobs": [] }, "ssg_jobs": { "generated_at": "…", "jobs": [] }, "reps": { "generated_at": "…", "reps": [] } }
+{
+  "swt_jobs": { "generated_at": "…", "jobs": [] },
+  "ssg_jobs": { "generated_at": "…", "jobs": [] },
+  "shi_jobs": {
+    "generated_at": "…",
+    "jobs": [{
+      "company": "SHI",
+      "rep": "Ada Example",
+      "date_sold": "2026-02-01",
+      "month": "2026-02",
+      "quote_no": "HI-100",
+      "job_name": "Sample Remodel",
+      "state": "CO",
+      "location": "CO - Denver",
+      "job_type": "Remodel",
+      "amount": 10,
+      "amount_pre_fee": 10,
+      "is_change_order": false,
+      "status": "",
+      "tab": "2026",
+      "row": 2
+    }]
+  },
+  "reps": { "generated_at": "…", "reps": [] }
+}
 ```
 
-All three keys are required. `200` returns `{ "ok": true, "replaced_at": "…", "counts": { "swt": 0, "ssg": 0, "reps": 0 } }`. `400` means nothing was saved. A missing token is `503`. A wrong token is `401`.
+`swt_jobs`, `ssg_jobs`, and `reps` are required. `shi_jobs` is optional: when it is omitted, Scottish Home Improvements is stored with no jobs, so the current SWT and SSG upload still succeeds. Once SHI sales should stay on the dashboard, send `shi_jobs` on every upload, because a payload without it replaces SHI with an empty list. `200` returns `{ "ok": true, "replaced_at": "…", "counts": { "swt": 0, "ssg": 0, "shi": 0, "reps": 0 } }`. `400` means nothing was saved. A missing token is `503`. A wrong token is `401`.
 
 ```bash
 DATA_INGEST_URL=https://<preview-host> DATA_INGEST_TOKEN=... node scripts/push-data.mjs /path/to/folder
 ```
 
-The folder contains `swt_jobs.json`, `ssg_jobs.json`, and `reps.json`. The script posts to `/api/ingest/data`. Keep the JSON under about 4 MB.
+The folder contains `swt_jobs.json`, `ssg_jobs.json`, and `reps.json`. Add `shi_jobs.json` when Scottish Home Improvements should be included; the script sends that file only when it is present. The script posts to `/api/ingest/data`. Keep the JSON under about 4 MB.
 
 Commission, when a later job has it, is a separate store:
 

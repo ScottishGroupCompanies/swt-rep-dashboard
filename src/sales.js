@@ -1,4 +1,4 @@
-import { normalizeCompany } from "./reps.js";
+import { COMPANIES, normalizeCompany } from "./reps.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MAX_JOBS = 20000;
@@ -138,7 +138,7 @@ function readReps(file, errors) {
     }
     const company = normalizeCompany(raw.company);
     const rep = String(raw.rep ?? "").trim();
-    if (company !== "SWT" && company !== "SSG") errors.push(`${where}.company must be SWT or SSG.`);
+    if (!COMPANIES.includes(company)) errors.push(`${where}.company must be SWT, SSG, or SHI.`);
     if (!rep) errors.push(`${where}.rep is required.`);
     const activeFlag = raw.active;
     const activeOk = activeFlag === true || activeFlag === false || activeFlag === "true" || activeFlag === "false";
@@ -160,6 +160,7 @@ export function prepareSnapshot(body) {
   }
   const swt = readCompany(body.swt_jobs, "SWT", "swt_jobs", errors);
   const ssg = readCompany(body.ssg_jobs, "SSG", "ssg_jobs", errors);
+  const shi = body.shi_jobs == null ? { generated_at: null, jobs: [] } : readCompany(body.shi_jobs, "SHI", "shi_jobs", errors);
   const reps = readReps(body.reps, errors);
   if (errors.length) return { ok: false, errors: errors.slice(0, 12) };
   return {
@@ -167,14 +168,15 @@ export function prepareSnapshot(body) {
     snapshot: {
       swt,
       ssg,
+      shi,
       reps,
       updated_at: new Date().toISOString(),
     },
-    counts: { swt: swt.jobs.length, ssg: ssg.jobs.length, reps: reps.reps.length },
+    counts: { swt: swt.jobs.length, ssg: ssg.jobs.length, shi: shi.jobs.length, reps: reps.reps.length },
   };
 }
 
 export function allJobs(snapshot) {
   if (!snapshot) return [];
-  return [...(snapshot.swt?.jobs || []), ...(snapshot.ssg?.jobs || [])];
+  return COMPANIES.flatMap((company) => snapshot[company.toLowerCase()]?.jobs || []);
 }

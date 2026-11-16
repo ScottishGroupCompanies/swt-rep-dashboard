@@ -1,6 +1,6 @@
 import { change } from "./compare.js";
 import { compareReps } from "./rep-compare.js";
-import { companyLabel, firstName, isExcludedRep, repKey } from "./reps.js";
+import { COMPANIES, companyLabel, firstName, isExcludedRep, repKey } from "./reps.js";
 import { allJobs, dollars, monthLabel, sumCents } from "./sales.js";
 
 function companyOption(id) {
@@ -27,7 +27,7 @@ export function companiesForRep(snapshot, fullName) {
   for (const job of allJobs(snapshot)) {
     if (job.rep === fullName) found.add(job.company);
   }
-  return ["SWT", "SSG"].filter((company) => found.has(company));
+  return COMPANIES.filter((company) => found.has(company));
 }
 
 function activeByRep(snapshot, company) {
@@ -221,7 +221,7 @@ export function buildDashboard(snapshot, session, query) {
   if (query.compare && session.role !== "admin") {
     return { status: 403, body: { error: "Rep comparisons are admin only." } };
   }
-  const allowed = session.role === "admin" ? ["SWT", "SSG"] : companiesForRep(snapshot, session.rep);
+  const allowed = session.role === "admin" ? COMPANIES : companiesForRep(snapshot, session.rep);
   if (session.role !== "admin" && (isExcludedRep(session.rep) || isExcludedRep(session.name))) {
     return { status: 403, body: { error: "This login has no personal dashboard." } };
   }
@@ -243,7 +243,7 @@ export function buildDashboard(snapshot, session, query) {
     return { status: 403, body: { error: "That company is not on this login." } };
   }
 
-  const generatedAt = requested === "SSG" ? snapshot.ssg?.generated_at : snapshot.swt?.generated_at;
+  const generatedAt = snapshot[requested.toLowerCase()]?.generated_at;
   let scope = allJobs(snapshot).filter((job) => job.company === requested);
   let viewing = null;
   let viewingKey = null;

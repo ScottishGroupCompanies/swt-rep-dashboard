@@ -3,9 +3,12 @@ import { createHash } from "node:crypto";
 /** Sheet codes that are not a person. They never get a login or a personal dashboard. */
 export const NON_PERSON_CODES = ["HOO"];
 
+export const COMPANIES = ["SWT", "SSG", "SHI"];
+
 const COMPANY_LABELS = {
   SWT: "Scottish Window Tinting",
   SSG: "Scottish Stained Glass",
+  SHI: "Scottish Home Improvements",
 };
 
 export function companyLabel(company) {
@@ -14,9 +17,10 @@ export function companyLabel(company) {
 
 export function normalizeCompany(value) {
   const text = String(value ?? "").trim().toUpperCase();
-  if (text === "SWT" || text === "SSG") return text;
+  if (text === "SWT" || text === "SSG" || text === "SHI") return text;
   if (text.includes("STAIN")) return "SSG";
   if (text.includes("TINT")) return "SWT";
+  if (text.includes("HOME") && text.includes("IMPROV")) return "SHI";
   return text;
 }
 
@@ -45,7 +49,7 @@ export function isExcludedRep(rep) {
 }
 
 /**
- * One login per active person. The same full name at both companies is one login.
+ * One login per active person. The same full name at more than one company is one login.
  * Inactive reps and non-person codes (HOO, plus DASHBOARD_EXCLUDE_REPS) are omitted.
  */
 export function loginCandidates(reps) {
@@ -55,7 +59,7 @@ export function loginCandidates(reps) {
     const company = normalizeCompany(row?.company);
     if (!rep || row?.active !== true) continue;
     if (isExcludedRep(rep)) continue;
-    if (company !== "SWT" && company !== "SSG") continue;
+    if (!COMPANIES.includes(company)) continue;
     const existing = byName.get(rep) || { rep, companies: [] };
     if (!existing.companies.includes(company)) existing.companies.push(company);
     byName.set(rep, existing);
@@ -77,7 +81,7 @@ export function loginCandidates(reps) {
       name,
       role: "rep",
       rep: entry.rep,
-      companies: ["SWT", "SSG"].filter((company) => entry.companies.includes(company)),
+      companies: COMPANIES.filter((company) => entry.companies.includes(company)),
     });
   }
   logins.sort((a, b) => a.name.localeCompare(b.name));
