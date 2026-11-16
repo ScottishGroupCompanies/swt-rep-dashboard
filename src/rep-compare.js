@@ -5,6 +5,8 @@
  * date_sold is not used.
  */
 
+import { canonicalMonth } from "./months.js";
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function periodLabel(period) {
@@ -16,9 +18,9 @@ export function periodLabel(period) {
 export function jobInPeriod(job, period) {
   if (String(job.year) !== String(period.year)) return false;
   if (period.mode === "year") return true;
-  const match = /^(\d{4})-(\d{2})$/.exec(String(job.month || ""));
-  if (!match || match[1] !== String(period.year)) return false;
-  const month = Number(match[2]);
+  const key = canonicalMonth(job.month, job.year);
+  if (!key || !key.startsWith(`${period.year}-`)) return false;
+  const month = Number(key.slice(5, 7));
   if (period.mode === "month") return month === Number(period.month);
   if (period.mode === "quarter") return Math.floor((month - 1) / 3) + 1 === Number(period.quarter);
   return false;
