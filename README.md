@@ -89,7 +89,7 @@ Codes are checked with scrypt on the server. The session is an httpOnly signed c
 
 `amount` and `amount_pre_fee` are the same pre-fee job total. Fees are already excluded. Extra fields are ignored.
 
-The sheet **tab** is the year (`2025` or `2026`). **Month Sold** (`month`, `YYYY-MM`) is the month. Do not group by the calendar year of `date_sold`. A later-year tab includes prior-year cancellation credits, and those credits belong to that tab.
+The sheet **tab** is the year (`2025` or `2026`). **Month Sold** is the month. SWT and SSG send `YYYY-MM`. SHI's sheet writes Month Sold as `8-August` or `1-January`; the tab supplies the year, so those become `2026-08` and `2026-01`. Date Sold may be `M/D/YYYY`. Do not group by the calendar year of `date_sold`. A later-year tab includes prior-year cancellation credits, and those credits belong to that tab.
 
 Company totals on the admin view add every row on the tab, including inactive reps and `HOO`.
 

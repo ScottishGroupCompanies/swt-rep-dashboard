@@ -1,3 +1,4 @@
+import { canonicalDate, canonicalMonth } from "./months.js";
 import { COMPANIES, normalizeCompany } from "./reps.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -10,8 +11,7 @@ export function sheetYear(job) {
 }
 
 export function monthKey(job) {
-  const month = String(job?.month ?? "").trim();
-  return /^\d{4}-\d{2}$/.test(month) ? month : null;
+  return canonicalMonth(job?.month, sheetYear(job) || job?.year);
 }
 
 export function monthLabel(key) {
@@ -77,7 +77,7 @@ function normalizeJob(raw, company, label, index, errors) {
   if (amount.error) local.push(`${where}.${amount.error}.`);
   const month = monthKey(raw);
   if (raw.month != null && String(raw.month).trim() !== "" && !month) {
-    local.push(`${where}.month must be YYYY-MM.`);
+    local.push(`${where}.month could not be read.`);
   }
   if (local.length) {
     errors.push(...local);
@@ -87,11 +87,11 @@ function normalizeJob(raw, company, label, index, errors) {
   const changeFlag = raw.is_change_order ?? raw.isChangeOrder;
   const changeOrder =
     changeFlag === true || changeFlag === "true" || (quote != null && quote.toUpperCase().includes("-CO"));
-  const date = blankToNull(raw.date_sold ?? raw.dateSold);
+  const date = canonicalDate(raw.date_sold ?? raw.dateSold);
   return {
     company,
     rep,
-    date_sold: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+    date_sold: date,
     month,
     quote_no: quote,
     job_name: blankToNull(raw.job_name ?? raw.jobName) || "Untitled job",

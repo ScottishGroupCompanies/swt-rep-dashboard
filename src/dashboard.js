@@ -1,4 +1,5 @@
 import { change, comparePeriods, orientPeriods, periodChange, presets, topStates, typeRows } from "./compare.js";
+import { canonicalMonth } from "./months.js";
 import { compareReps, periodLabel } from "./rep-compare.js";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -174,7 +175,10 @@ function leaderboardHtml(rows, years) {
 
 function compareMonthKeys(jobs) {
   const years = new Set(
-    (jobs || []).map((job) => job.month).filter(Boolean).map((key) => key.slice(0, 4)),
+    (jobs || [])
+      .map((job) => canonicalMonth(job.month, job.year))
+      .filter(Boolean)
+      .map((key) => key.slice(0, 4)),
   );
   const keys = [];
   for (const year of [...years].sort()) {
@@ -239,7 +243,7 @@ function render(data) {
   }
 
   const kpis = data.kpis;
-  const monthKeys = [...new Set((data.jobs || []).map((job) => job.month).filter(Boolean))].sort();
+  const monthKeys = [...new Set((data.jobs || []).map((job) => canonicalMonth(job.month, job.year)).filter(Boolean))].sort();
   const compareMonths = compareMonthKeys(data.jobs || []);
   document.getElementById("dash").innerHTML = `
     <section class="kpi-grid">
@@ -277,9 +281,7 @@ function render(data) {
     renderCompare();
   }
   drawCharts(data);
-  if (document.getElementById("versusYear") && data.year) document.getElementById("versusYear").value = data.year;
-  if (document.getElementById("versusMonth")) document.getElementById("versusMonth").value = "8";
-  if (document.getElementById("versusQuarter")) document.getElementById("versusQuarter").value = "1";
+  applyVersus(data);
   renderRepCompare();
   } finally {
     rendering = false;
@@ -340,7 +342,7 @@ function salesJobs() {
   return (current?.jobs || [])
     .filter((job) => job.month)
     .map((job) => ({
-      monthKey: job.month,
+      monthKey: canonicalMonth(job.month, job.year),
       charged: job.amount,
       commission: 0,
       jobType: job.type,
@@ -424,10 +426,40 @@ function showVersusFields() {
   document.getElementById("versusQuarter2Wrap").hidden = !second || !quarter;
 }
 
+function applyVersus(data) {
+  const year = document.getElementById("versusYear");
+  if (!year) return;
+  const saved = view.versus;
+  document.getElementById("versusMode").value = saved?.mode || "month";
+  year.value = saved?.year || data.year || year.value;
+  document.getElementById("versusMonth").value = saved?.month || "8";
+  document.getElementById("versusQuarter").value = saved?.quarter || "1";
+  document.getElementById("versusSecond").checked = Boolean(saved?.second);
+  if (saved?.year2) document.getElementById("versusYear2").value = saved.year2;
+  if (saved?.month2) document.getElementById("versusMonth2").value = saved.month2;
+  if (saved?.quarter2) document.getElementById("versusQuarter2").value = saved.quarter2;
+}
+
+function rememberVersus() {
+  const mode = document.getElementById("versusMode");
+  if (!mode) return;
+  view.versus = {
+    mode: mode.value,
+    year: document.getElementById("versusYear").value,
+    month: document.getElementById("versusMonth").value,
+    quarter: document.getElementById("versusQuarter").value,
+    second: document.getElementById("versusSecond").checked,
+    year2: document.getElementById("versusYear2").value,
+    month2: document.getElementById("versusMonth2").value,
+    quarter2: document.getElementById("versusQuarter2").value,
+  };
+}
+
 function renderRepCompare() {
   const root = document.getElementById("repCompare");
   const canvas = document.getElementById("repCompareChart");
   if (!root || !current?.leaderboard || !document.getElementById("versusMode")) return;
+  rememberVersus();
   showVersusFields();
   const reps = selectedVersusReps();
   if (reps.length < 2) {
@@ -471,7 +503,7 @@ function renderRepCompare() {
 }
 
 function applyPreset(kind) {
-  const keys = [...new Set((current?.jobs || []).map((job) => job.month).filter(Boolean))].sort();
+  const keys = [...new Set((current?.jobs || []).map((job) => canonicalMonth(job.month, job.year)).filter(Boolean))].sort();
   const preset = presets(keys)[kind];
   if (!preset) return;
   document.getElementById("fromA").value = preset.a.start;
@@ -520,6 +552,7 @@ document.body.addEventListener("click", (event) => {
   if (company) {
     view.company = company.dataset.company;
     view.year = null;
+    view.versus = null;
     load();
     return;
   }
@@ -547,12 +580,12 @@ document.body.addEventListener("click", (event) => {
 });
 
 document.body.addEventListener("change", (event) => {
-  if (event.target.id === "yearSelect" && !rendering) {
+  if (event.target.id === "yearSelect" && !rendering && event.target.value !== view.year) {
     view.year = event.target.value;
     load();
   }
-  if (event.target.matches?.("[data-compare]")) renderCompare();
-  if (event.target.matches?.("[data-versus]")) renderRepCompare();
+  if (event.target.closest?.("[data-compare]")) renderCompare();
+  if (event.target.closest?.("[data-versus]")) renderRepCompare();
 });
 
 showGate();
