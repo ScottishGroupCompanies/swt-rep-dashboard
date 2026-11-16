@@ -1,3 +1,4 @@
+import { COMPANIES, companyLabel } from "../../src/reps.js";
 import { buildDashboard } from "../../src/view.js";
 import { queryOf, vercel } from "../lib/http.js";
 import { readSession } from "../lib/session.js";
@@ -24,7 +25,7 @@ export async function handle(req) {
         empty: true,
         role: session.role,
         viewer: session.name,
-        companies: session.role === "admin" ? [{ id: "SWT", label: "Scottish Window Tinting" }, { id: "SSG", label: "Scottish Stained Glass" }] : [],
+        companies: session.role === "admin" ? COMPANIES.map((id) => ({ id, label: companyLabel(id) })) : [],
         commission: { status: "coming_soon" },
       },
     };

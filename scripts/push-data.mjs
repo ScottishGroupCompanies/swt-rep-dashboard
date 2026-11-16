@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const dir = process.argv[2] || process.env.DATA_DIR;
@@ -7,7 +7,7 @@ const rawUrl = process.env.DATA_INGEST_URL;
 
 if (!dir || !token || !rawUrl) {
   console.error("Usage: DATA_INGEST_URL=https://<host> DATA_INGEST_TOKEN=... node scripts/push-data.mjs <folder>");
-  console.error("The folder must contain swt_jobs.json, ssg_jobs.json, and reps.json.");
+  console.error("The folder must contain swt_jobs.json, ssg_jobs.json, and reps.json. shi_jobs.json is optional.");
   process.exit(1);
 }
 
@@ -18,11 +18,18 @@ if (!endpoint.pathname.replace(/\/$/, "").endsWith("/api/ingest/data")) {
   endpoint.hash = "";
 }
 
-const [swt, ssg, reps] = await Promise.all(
-  ["swt_jobs.json", "ssg_jobs.json", "reps.json"].map((name) =>
-    readFile(join(dir, name), "utf8").then((text) => JSON.parse(text)),
-  ),
-);
+async function readJson(name) {
+  return JSON.parse(await readFile(join(dir, name), "utf8"));
+}
+
+const [swt, ssg, reps] = await Promise.all(["swt_jobs.json", "ssg_jobs.json", "reps.json"].map((name) => readJson(name)));
+const body = { swt_jobs: swt, ssg_jobs: ssg, reps };
+try {
+  await access(join(dir, "shi_jobs.json"));
+  body.shi_jobs = await readJson("shi_jobs.json");
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
+}
 
 const response = await fetch(endpoint, {
   method: "POST",
@@ -30,7 +37,7 @@ const response = await fetch(endpoint, {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ swt_jobs: swt, ssg_jobs: ssg, reps }),
+  body: JSON.stringify(body),
 });
 
 const text = await response.text();

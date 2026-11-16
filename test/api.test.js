@@ -100,7 +100,7 @@ test("login names come from the env and skip non-person codes", async () => {
 test("a full upload replaces the snapshot once and a bad upload does not", async () => {
   const first = await ingest(post(upload, { authorization: "Bearer ingest-test-token" }));
   assert.equal(first.status, 200);
-  assert.deepEqual(first.body.counts, { swt: 2, ssg: 2, reps: 4 });
+  assert.deepEqual(first.body.counts, { swt: 2, ssg: 2, shi: 0, reps: 4 });
   const again = await ingest(post(upload, { authorization: "Bearer ingest-test-token" }));
   assert.equal(again.status, 200);
   assert.equal((await readSnapshot()).swt.jobs.length, 2);
