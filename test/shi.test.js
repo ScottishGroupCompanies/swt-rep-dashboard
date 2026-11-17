@@ -100,7 +100,7 @@ test("admin SHI totals, periods, and rep compare use the sheet tab and Month Sol
   assert.equal(admin.body.generatedAt, "2026-03-03T00:00:00Z");
   assert.deepEqual(
     admin.body.companies.map((company) => company.id),
-    ["SWT", "SSG", "SHI"],
+    ["SGC", "SWT", "SSG", "SHI"],
   );
   assert.equal(admin.body.kpis.sales, tabTotals(jobs, "SHI", "2026").sales);
 

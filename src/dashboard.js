@@ -189,6 +189,98 @@ function compareMonthKeys(jobs) {
   return keys;
 }
 
+function sgcHtml(summary) {
+  const companies = summary.companies || [];
+  const total = summary.total || { sales2025: 0, sales2026: 0, jobs2025: 0, jobs2026: 0, avg2026: 0, yoy: null };
+  const ytd = summary.ytd;
+  const companyRows = [...companies, { ...total, label: "SGC total", id: "SGC" }]
+    .map(
+      (row) => `<tr>
+        <td>${esc(row.label)}</td>
+        <td class="money">${money.format(row.sales2025)}</td>
+        <td>${row.jobs2025}</td>
+        <td class="money">${money.format(row.sales2026)}</td>
+        <td>${row.jobs2026}</td>
+        <td class="money">${money.format(row.avg2026 || 0)}</td>
+        <td>${deltaHtml(row.yoy)}</td>
+      </tr>`,
+    )
+    .join("");
+  const leaders = (summary.leaderboard || [])
+    .map(
+      (row) => `<tr><td>${esc(row.name)}</td><td>${esc(row.companies.join(", "))}</td><td class="money">${money.format(row.sales)}</td><td>${row.jobs}</td></tr>`,
+    )
+    .join("");
+  const jobLine = (job) =>
+    job
+      ? `<tr><td>${esc(job.company)}</td><td>${esc(job.name)}</td><td>${esc(job.rep)}</td><td>${esc(job.date || "—")}</td><td class="money">${money.format(job.amount)}</td></tr>`
+      : "";
+  return `
+    <section class="kpi-grid">
+      <article class="kpi accent"><div class="label">2026 sales</div><div class="value">${money.format(total.sales2026)}</div><div class="hint">${total.jobs2026} jobs · avg ${money.format(total.avg2026 || 0)}</div></article>
+      <article class="kpi"><div class="label">2025 sales</div><div class="value">${money.format(total.sales2025)}</div><div class="hint">${total.jobs2025} jobs · full sheet year</div></article>
+      <article class="kpi"><div class="label">2026 vs 2025</div><div class="value">${deltaHtml(total.yoy)}</div><div class="hint">Full sheet tabs</div></article>
+      <article class="kpi"><div class="label">2026 through ${esc(ytd?.through || "—")}</div><div class="value">${ytd ? money.format(ytd.sales2026) : "—"}</div><div class="hint">${ytd ? `${ytd.jobs2026} jobs` : "No 2026 dates yet"}</div></article>
+      <article class="kpi"><div class="label">2025 through ${esc(ytd?.through || "—")}</div><div class="value">${ytd ? money.format(ytd.sales2025) : "—"}</div><div class="hint">${ytd ? `${ytd.jobs2025} jobs` : ""}</div></article>
+      <article class="kpi"><div class="label">Same-date change</div><div class="value">${ytd ? deltaHtml(ytd.yoy) : "—"}</div><div class="hint">2026 year to date vs 2025 to the same date</div></article>
+    </section>
+    <section class="card"><h2>2025 vs 2026</h2><p class="caption">Every job on each sheet tab. 2025 is the finished year. Change is 2026 minus 2025.</p>
+      <div class="scroll"><table class="jobs"><thead><tr><th>Company</th><th>2025 sales</th><th>2025 jobs</th><th>2026 sales</th><th>2026 jobs</th><th>2026 avg</th><th>Change</th></tr></thead><tbody>${companyRows}</tbody></table></div>
+    </section>
+    <section class="grid-2">
+      <article class="card"><h2>2026 mix</h2><p class="caption">Share of combined 2026 sales.</p><div class="chart-wrap sm"><canvas id="sgcMix"></canvas></div>${bars((summary.mix || []).map((row) => ({ name: row.id, sales: row.sales })))}</article>
+      <article class="card"><h2>Quarters</h2><p class="caption">Calendar quarters of Month Sold on each sheet year.</p><div class="chart-wrap sm"><canvas id="sgcQuarters"></canvas></div></article>
+    </section>
+    <section class="card"><h2>Months</h2><p class="caption">Combined Month Sold, 2025 and 2026.</p><div class="chart-wrap"><canvas id="sgcMonths"></canvas></div></section>
+    <section class="card"><h2>Top reps</h2><p class="caption">Highest 2026 sales across all three companies. The same full name is one row.</p>
+      <div class="scroll"><table class="jobs"><thead><tr><th>Rep</th><th>Companies</th><th>Sales</th><th>Jobs</th></tr></thead><tbody>${leaders || `<tr><td colspan="4">No 2026 jobs.</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="card"><h2>Top job</h2><p class="caption">Largest 2026 job, then the largest in each company.</p>
+      <div class="scroll"><table class="jobs"><thead><tr><th>Company</th><th>Job</th><th>Rep</th><th>Date sold</th><th>Amount</th></tr></thead><tbody>
+        ${summary.topJob ? `<tr><td>SGC</td><td>${esc(summary.topJob.name)}</td><td>${esc(summary.topJob.rep)}</td><td>${esc(summary.topJob.date || "—")}</td><td class="money">${money.format(summary.topJob.amount)}</td></tr>` : ""}
+        ${(summary.topByCompany || []).map(jobLine).join("")}
+      </tbody></table></div>
+    </section>
+    ${(summary.states || []).length ? `<section class="card"><h2>States</h2><p class="caption">Top states by 2026 sales.</p>${bars(summary.states)}</section>` : ""}
+    ${commissionCard()}`;
+}
+
+function drawSgcCharts(summary) {
+  const mix = summary.mix || [];
+  chart(document.getElementById("sgcMix"), {
+    type: "doughnut",
+    data: {
+      labels: mix.map((row) => row.id),
+      datasets: [{ data: mix.map((row) => row.sales), backgroundColor: ["#1B2A4A", "#4E628A", "#8B98B3"] }],
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+  });
+  const quarters = summary.quarters || [];
+  chart(document.getElementById("sgcQuarters"), {
+    type: "bar",
+    data: {
+      labels: quarters.map((row) => row.label),
+      datasets: [
+        { label: "2025", data: quarters.map((row) => row.sales2025), backgroundColor: "#8B98B3" },
+        { label: "2026", data: quarters.map((row) => row.sales2026), backgroundColor: "#1B2A4A" },
+      ],
+    },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
+  });
+  const months = summary.months || [];
+  chart(document.getElementById("sgcMonths"), {
+    type: "bar",
+    data: {
+      labels: months.map((row) => row.label),
+      datasets: [
+        { label: "2025", data: months.map((row) => row.sales2025), backgroundColor: "#8B98B3" },
+        { label: "2026", data: months.map((row) => row.sales2026), backgroundColor: "#1B2A4A" },
+      ],
+    },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
+  });
+}
+
 function compareHtml(months) {
   if (months.length < 2) return "";
   const options = months
@@ -222,20 +314,28 @@ function render(data) {
     : data.role === "admin"
       ? data.companyLabel || "Sales"
       : `${data.viewer} · ${data.companyLabel || "Sales"}`;
-  document.getElementById("pageSub").textContent = data.empty
-    ? "No sales file has been uploaded yet."
-    : `Sheet ${data.year || "—"} · Month Sold · pre-fee totals`;
+  document.getElementById("pageSub").textContent = data.sgc
+    ? "All companies · 2025 and 2026 sheet tabs"
+    : data.empty
+      ? "No sales file has been uploaded yet."
+      : `Sheet ${data.year || "—"} · Month Sold · pre-fee totals`;
   document.getElementById("back").hidden = !data.viewing;
   const yearSelect = document.getElementById("yearSelect");
   yearSelect.innerHTML = (data.years || []).map((year) => `<option value="${esc(year)}">${esc(year)}</option>`).join("");
   if (data.year) yearSelect.value = data.year;
-  yearSelect.disabled = !(data.years || []).length;
+  yearSelect.disabled = Boolean(data.sgc) || !(data.years || []).length;
   document.getElementById("companySwitch").innerHTML = (data.companies || [])
     .map(
       (company) =>
         `<button type="button" data-company="${esc(company.id)}" class="${company.id === data.company ? "active" : ""}" aria-pressed="${company.id === data.company}">${esc(company.label)}</button>`,
     )
     .join("");
+
+  if (data.sgc) {
+    document.getElementById("dash").innerHTML = sgcHtml(data.summary || {});
+    drawSgcCharts(data.summary || {});
+    return;
+  }
 
   if (data.empty) {
     document.getElementById("dash").innerHTML = `<section class="card"><h2>Waiting for sales data</h2><p>${esc(data.message || "No sales file has been uploaded yet.")}</p></section>${commissionCard()}`;
