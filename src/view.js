@@ -2,6 +2,9 @@ import { change } from "./compare.js";
 import { compareReps } from "./rep-compare.js";
 import { COMPANIES, companyLabel, firstName, isExcludedRep, repKey } from "./reps.js";
 import { allJobs, dollars, monthLabel, sumCents } from "./sales.js";
+import { buildSgcReport } from "./sgc.js";
+
+const ADMIN_COMPANIES = ["SGC", ...COMPANIES];
 
 function companyOption(id) {
   return { id, label: companyLabel(id) };
@@ -221,7 +224,7 @@ export function buildDashboard(snapshot, session, query) {
   if (query.compare && session.role !== "admin") {
     return { status: 403, body: { error: "Rep comparisons are admin only." } };
   }
-  const allowed = session.role === "admin" ? COMPANIES : companiesForRep(snapshot, session.rep);
+  const allowed = session.role === "admin" ? ADMIN_COMPANIES : companiesForRep(snapshot, session.rep);
   if (session.role !== "admin" && (isExcludedRep(session.rep) || isExcludedRep(session.name))) {
     return { status: 403, body: { error: "This login has no personal dashboard." } };
   }
@@ -239,8 +242,36 @@ export function buildDashboard(snapshot, session, query) {
     };
   }
   const requested = String(query.company || allowed[0] || "SWT").toUpperCase();
+  if (requested === "SGC" && session.role !== "admin") {
+    return { status: 403, body: { error: "The combined view is admin only." } };
+  }
   if (!allowed.includes(requested)) {
     return { status: 403, body: { error: "That company is not on this login." } };
+  }
+  if (requested === "SGC") {
+    const jobs = allJobs(snapshot);
+    const generated = [snapshot.swt?.generated_at, snapshot.ssg?.generated_at, snapshot.shi?.generated_at]
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+    return {
+      status: 200,
+      body: {
+        sgc: true,
+        empty: jobs.length === 0,
+        company: "SGC",
+        companyLabel: companyLabel("SGC"),
+        companies: allowed.map(companyOption),
+        role: "admin",
+        viewer: session.name,
+        viewing: null,
+        year: "2026",
+        years: ["2026", "2025"],
+        generatedAt: generated || snapshot.updated_at || null,
+        summary: buildSgcReport(jobs),
+        commission: { status: "coming_soon" },
+      },
+    };
   }
 
   const generatedAt = snapshot[requested.toLowerCase()]?.generated_at;

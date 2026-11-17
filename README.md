@@ -14,6 +14,8 @@ Display names in the dashboard are the first name only (`Ada Example` is shown a
 
 On the admin company view, pick two or more reps, then Year vs year, Month vs month, or Quarter vs quarter. Quarters are calendar quarters of Month Sold on that sheet tab. Check “Second period” to put the same reps side by side for another year, month, or quarter. Rep logins cannot request that comparison.
 
+Jenny's login opens on **SGC**, the three companies together: 2025 versus 2026, a same-date year-to-date line, monthly and quarterly charts, 2026 mix, the top five reps, and the largest jobs. That view has no rep comparison and no recent-jobs list. A rep login never receives it.
+
 For the first setup, put `0000` in the gitignored login file for every person. Change one person's code later by editing that file and replacing the `DASHBOARD_LOGINS` value. No application change is required.
 
 ```bash

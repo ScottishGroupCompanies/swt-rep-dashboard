@@ -9,6 +9,7 @@ const COMPANY_LABELS = {
   SWT: "Scottish Window Tinting",
   SSG: "Scottish Stained Glass",
   SHI: "Scottish Home Improvements",
+  SGC: "Scottish Group Companies",
 };
 
 export function companyLabel(company) {

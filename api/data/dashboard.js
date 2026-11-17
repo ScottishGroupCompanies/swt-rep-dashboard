@@ -25,7 +25,7 @@ export async function handle(req) {
         empty: true,
         role: session.role,
         viewer: session.name,
-        companies: session.role === "admin" ? COMPANIES.map((id) => ({ id, label: companyLabel(id) })) : [],
+        companies: session.role === "admin" ? ["SGC", ...COMPANIES].map((id) => ({ id, label: companyLabel(id) })) : [],
         commission: { status: "coming_soon" },
       },
     };
